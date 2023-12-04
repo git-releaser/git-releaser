@@ -1,0 +1,91 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    ":gitSignOff",
+    "schedule:nonOfficeHours",
+    ":semanticCommitTypeAll(deps)",
+    ":semanticCommitScope()",
+    "group:monorepos",
+    ":automergePatch"
+  ],
+  "addLabels": ["dependencies"],
+  "cloneSubmodules": true,
+  "prConcurrentLimit": 15,
+  "stabilityDays": 3,
+  "timezone": "Europe/Vienna",
+  "postUpdateOptions": [
+    "gomodTidy",
+    "gomodMassage"
+  ],
+  "ignorePaths": [
+    "**/test/**",
+    "**/tests/**"
+  ],
+  "ignoreDeps": [
+    "ghcr.io/keptn/lifecycle-operator",
+    "ghcr.io/keptn/scheduler",
+    "ghcr.io/keptn/functions-runtime",
+    "ghcr.io/keptn/certificate-operator",
+    "ghcr.io/keptn/metrics-operator"
+  ],
+  "packageRules": [
+    {
+      "excludePackagePatterns": [
+        "docker.io\\/thschue\\/.*",
+        "docker.io\\/annadreal\\/.*",
+        "docker.io\\/bacherfl\\/.*",
+        "docker.io\\/mowies\\/.*",
+        "docker.io\\/odubajdt\\/.*",
+        "docker.io\\/thisthatdc\\/.*"
+      ]
+    },
+    {
+      "matchManagers": ["gomod"],
+      "addLabels": ["go"]
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "addLabels": ["github_actions"]
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "addLabels": ["docker"]
+    },
+    {
+      "matchPackageNames": ["kubernetes-sigs/kustomize"],
+      "extractVersion": "^kustomize/(?<version>.*)$"
+    }
+  ],
+  "regexManagers": [
+    {
+      "fileMatch": [
+        "(^|\\/)Makefile$",
+        "(^|\\/)Dockerfile",
+        "(^|\\/).*\\.ya?ml$",
+        "(^|\\/).*\\.toml$",
+        "(^|\\/).*\\.sh$"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>.+?) depName=(?<depName>.+?)\\s.*?_VERSION ?(\\??=|\\: ?) ?\\\"?(?<currentValue>.+?)?\\\"?\\s"
+      ]
+    }
+  ],
+  "kubernetes": {
+    "fileMatch": [
+      "examples\\/.*\\.ya?ml$",
+      "test\\/.*\\.ya?ml$"
+    ],
+    "packageRules": [
+      {
+        "excludePackagePatterns": [
+          ".*podtato\\-head.*"
+        ]
+      }
+    ],
+    "ignorePaths": [
+      "examples/support/observability/config/prometheus/**/*",
+      "test/prometheus/**/*"
+    ]
+  }
+}
