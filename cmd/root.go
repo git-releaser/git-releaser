@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/adrg/xdg"
 	"github.com/thschue/git-releaser/cmd/initialize"
+	"github.com/thschue/git-releaser/cmd/update"
 	"os"
 	"path/filepath"
 
@@ -60,6 +61,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.AddCommand(initialize.InitializeCmd)
+	rootCmd.AddCommand(update.UpdateCmd)
 
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", fmt.Sprintf("Default config file (%s/git-releaser/git-releaser.yaml)", xdg.ConfigHome))
