@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const ReleaseManifestFilename = ".git-releaser-manifest.json"
+
 // initializeCmd represents the initialize command
 var InitializeCmd = &cobra.Command{
 	Use:   "initialize",
@@ -22,10 +24,10 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if _, err := os.Stat(".git-releaser-manifest.json"); errors.Is(err, os.ErrNotExist) {
+		if _, err := os.Stat(ReleaseManifestFilename); errors.Is(err, os.ErrNotExist) {
 			version := "0.0.1"
-			// write version to .go-releaser-manifest.json
-			manifest, err := os.Create(".git-releaser-manifest.json")
+			// write version to .git-releaser-manifest.json
+			manifest, err := os.Create(ReleaseManifestFilename)
 			if err != nil {
 				fmt.Println(err)
 				return
@@ -37,7 +39,7 @@ to quickly create a Cobra application.`,
 				return
 			}
 		} else {
-			fmt.Println(".go-releaser-manifest.json already exists")
+			fmt.Println(ReleaseManifestFilename + " already exists")
 		}
 	},
 }
