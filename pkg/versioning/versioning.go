@@ -10,8 +10,6 @@ import (
 )
 
 var rootRepositoryFlag string
-var rootTargetFlag string
-var rootPrefixFlag string
 
 func GetNextVersion() (semver.Version, bool) {
 	var nextVersion semver.Version

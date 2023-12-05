@@ -1,0 +1,24 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+    - id: check-merge-conflict
+    - id: trailing-whitespace
+    - id: end-of-file-fixer
+    - id: check-json
+    - id: check-yaml
+      args: [--allow-multiple-documents]
+    - id: check-added-large-files
+    - id: end-of-file-fixer
+    - id: detect-private-key
+    - id: check-case-conflict
+    - id: check-executables-have-shebangs
+    - id: check-shebang-scripts-are-executable
+
+-  repo: https://github.com/golangci/golangci-lint
+   rev: v1.55.2
+   hooks:
+   - id: golangci-lint-full
+     args: [--timeout=5m]
