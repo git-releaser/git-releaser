@@ -20,6 +20,8 @@ type GitProvider interface {
 	CheckCreateBranch(targetVersion string) (string, error)
 	CheckCreatePullRequest(source string, target string, currentVersion string, targetVersion string) error
 	CommitManifest(branchName string, content string) error
+	CreateRelease(version string, description string) error
+	CheckRelease(version string) (bool, error)
 }
 
 func NewGitClient(config GitConfig) GitProvider {
