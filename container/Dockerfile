@@ -24,7 +24,7 @@ COPY ./ ./
 
 RUN go build -o /workspace/git-releaser -ldflags "-X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${DATE}" ./
 
-FROM gcr.io/distroless/static AS production
+FROM alpine:3.18.5 AS production
 
 LABEL org.opencontainers.image.source="https://github.com/git-releaser/git-releaser" \
     org.opencontainers.image.url="https://github.com/git-releaser/git-releaser" \
