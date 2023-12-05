@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"github.com/thschue/git-releaser/pkg/git/github"
 	"github.com/thschue/git-releaser/pkg/git/gitlab"
 	"log"
@@ -22,6 +23,10 @@ type GitProvider interface {
 }
 
 func NewGitClient(config GitConfig) GitProvider {
+	if config.Provider == "" {
+		config.Provider = "github"
+	}
+
 	switch strings.ToLower(config.Provider) {
 	case "gitlab":
 		projectID, err := strconv.Atoi(config.AdditionalConfig["projectId"])
@@ -37,10 +42,17 @@ func NewGitClient(config GitConfig) GitProvider {
 		}
 
 	case "github":
+		if config.AdditionalConfig["apiUrl"] == "" {
+			config.AdditionalConfig["apiUrl"] = "https://api.github.com"
+		}
+
+		fmt.Println(config.UserId)
 		return &github.Client{
 			UserId:      config.UserId,
 			AccessToken: config.AccessToken,
 			ProjectURL:  config.ProjectUrl,
+			Repository:  config.AdditionalConfig["repository"],
+			ApiURL:      config.AdditionalConfig["apiUrl"],
 		}
 	}
 	return nil
