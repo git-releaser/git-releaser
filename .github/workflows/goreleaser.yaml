@@ -84,5 +84,5 @@ jobs:
       - name: Attach SBOM to release
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         with:
-          tag_name: ${{ release.tag }}
+          tag_name: ${GITHUB_REF#refs/tags/}
           files: ./sbom-${{ env.IMAGE_NAME }}.spdx.json
