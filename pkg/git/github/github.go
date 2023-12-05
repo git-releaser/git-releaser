@@ -8,12 +8,12 @@ type Client struct {
 	ProjectURL  string
 }
 
-func (g Client) CheckCreateBranch() (string, error) {
+func (g Client) CheckCreateBranch(targetVersion string) (string, error) {
 	fmt.Println("CheckCreateBranch")
 	return "", fmt.Errorf("not implemented")
 }
 
-func (g Client) CheckCreatePullRequest(source string, target string) error {
+func (g Client) CheckCreatePullRequest(source string, target string, sourceVersion string, targetVersion string) error {
 	fmt.Println("CheckCreatePullRequest")
 	return fmt.Errorf("not implemented")
 

@@ -1,6 +1,7 @@
 package versioning
 
 import (
+	"fmt"
 	"github.com/Masterminds/semver"
 	gogit "github.com/go-git/go-git/v5"
 	"github.com/thenativeweb/get-next-version/git"
@@ -30,6 +31,9 @@ func GetNextVersion() (semver.Version, bool) {
 		}
 		nextVersion, hasNextVersion = versioning.CalculateNextVersion(currentVersion, result.ConventionalCommitTypes)
 	}
+
+	fmt.Println("Next version: ", nextVersion)
+	fmt.Println("Has next version: ", hasNextVersion)
 
 	return nextVersion, hasNextVersion
 }

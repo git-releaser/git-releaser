@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/thschue/git-releaser/pkg/versioning"
 	"io"
 	"net/http"
 )
@@ -17,66 +16,30 @@ type MergeRequest struct {
 	Title        string `json:"title"`
 }
 
-func (g Client) CheckCreatePullRequest(source string, target string) error {
-	// check if branch exists in gitlab
-	exists, err := g.doesPullRequestExist(source)
+func (g Client) CheckCreatePullRequest(source string, target string, currentVersion string, nextVersion string) error {
+	err := g.CreatePullRequest(source, target, currentVersion, nextVersion)
 	if err != nil {
 		return err
-	}
-
-	if !exists {
-		err := g.CreatePullRequest(source, target)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
 
-func (g Client) doesPullRequestExist(sourceBranch string) (bool, error) {
-	/*
-		url := fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID)
-
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			return false, err
-		}
-
-		req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
-
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
-			return false, err
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return false, fmt.Errorf("failed to get merge requests. Status code: %d", resp.StatusCode)
-		}
-
-		var mergeRequests []MergeRequest
-		err = json.NewDecoder(resp.Body).Decode(&mergeRequests)
-		if err != nil {
-			return false, err
-		}
-
-		for _, mr := range mergeRequests {
-			if mr.SourceBranch == sourceBranch && mr.TargetBranch == "main" {
-				return true, nil
-			}
-		}
-
-	*/
-
-	return false, nil
-}
-
-func (g Client) CreatePullRequest(source string, target string) error {
+func (g Client) CreatePullRequest(source string, target string, currentVersion string, nextVersion string) error {
 	url := fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID)
 
-	version, _ := versioning.GetNextVersion()
-	title, description := generatePRTitleAndDescription(version.String())
+	// Check if a pull request with the same source and target branches already exists
+	existingPrID, err := g.getExistingPullRequestID(source, target)
+	if err != nil {
+		return err
+	}
+
+	commits, _ := g.getCommitsSinceRelease(currentVersion)
+	conventionalCommits := parseConventionalCommits(commits)
+	changelog := generateChangelog(conventionalCommits, g.ProjectURL)
+
+	title := generatePrTitle(nextVersion)
+	description := createPrDescription(nextVersion, changelog)
+
 	payload := map[string]interface{}{
 		"source_branch": source,
 		"target_branch": target,
@@ -84,14 +47,27 @@ func (g Client) CreatePullRequest(source string, target string) error {
 		"description":   description,
 	}
 
+	var req *http.Request
+
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
-	if err != nil {
-		return err
+	if existingPrID != 0 {
+		// If the pull request already exists, update its description
+		url = fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, existingPrID)
+		fmt.Println(url)
+		req, err = http.NewRequest("PUT", url, bytes.NewBuffer(jsonPayload))
+		if err != nil {
+			return err
+		}
+	} else {
+		// If the pull request doesn't exist, create a new one
+		req, err = http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
+		if err != nil {
+			return err
+		}
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -104,17 +80,74 @@ func (g Client) CreatePullRequest(source string, target string) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to create pull request. Status code: %d, Body: %s", resp.StatusCode, body)
+		return fmt.Errorf("failed to create/update pull request. Status code: %d, Body: %s", resp.StatusCode, body)
 	}
 
-	fmt.Println("Pull request created successfully.")
+	if existingPrID != 0 {
+		fmt.Println("Pull request updated successfully.")
+	} else {
+		fmt.Println("Pull request created successfully.")
+	}
+
 	return nil
 }
 
-func generatePRTitleAndDescription(version string) (string, string) {
+func generatePrTitle(version string) string {
 	title := fmt.Sprintf("Release %s", version)
-	description := fmt.Sprintf("This is a description for the new pull request for version %s.", version)
-	return title, description
+	return title
+}
+
+func createPrDescription(version string, changelog string) string {
+	return fmt.Sprintf("This is a description for the new pull request for version %s.\n\n## Changelog\n\n%s", version, changelog)
+}
+
+// getExistingPullRequestID retrieves the ID of an existing pull request with the same source and target branches
+func (g Client) getExistingPullRequestID(source, target string) (int, error) {
+	url := fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID)
+
+	// Fetch all merge requests
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return 0, fmt.Errorf("failed to fetch merge requests. Status code: %d, Body: %s", resp.StatusCode, body)
+	}
+
+	var mergeRequests []struct {
+		ID           int    `json:"id"`
+		IID          int    `json:"iid"`
+		SourceBranch string `json:"source_branch"`
+		TargetBranch string `json:"target_branch"`
+		State        string `json:"state"`
+		Title        string `json:"title"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&mergeRequests); err != nil {
+		return 0, err
+	}
+
+	// Find the ID of the existing pull request with the same source and target branches
+	for _, pr := range mergeRequests {
+		if pr.SourceBranch == source && pr.TargetBranch == target && pr.State == "opened" {
+			if pr.IID != 0 {
+				return pr.IID, nil
+			}
+			return pr.ID, nil
+		}
+	}
+
+	return 0, nil // No existing pull request found
 }

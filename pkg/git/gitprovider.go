@@ -16,8 +16,8 @@ type GitConfig struct {
 	AdditionalConfig map[string]string
 }
 type GitProvider interface {
-	CheckCreateBranch() (string, error)
-	CheckCreatePullRequest(source string, target string) error
+	CheckCreateBranch(targetVersion string) (string, error)
+	CheckCreatePullRequest(source string, target string, currentVersion string, targetVersion string) error
 	CommitManifest(branchName string, content string) error
 }
 

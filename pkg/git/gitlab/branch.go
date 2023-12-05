@@ -4,15 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/thschue/git-releaser/pkg/versioning"
 	"io"
 	"net/http"
 )
 
-func (g Client) CheckCreateBranch() (string, error) {
-	version, _ := versioning.GetNextVersion()
-
-	branchName := fmt.Sprintf("release-%s", version.String())
+func (g Client) CheckCreateBranch(version string) (string, error) {
+	branchName := fmt.Sprintf("release-%s", version)
 	branchExists, _ := g.branchExists(branchName)
 	if !branchExists {
 		err := g.createBranch(branchName)
