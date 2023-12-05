@@ -35,7 +35,7 @@ func (g Client) CreatePullRequest(source string, target string, currentVersion s
 
 	commits, _ := g.getCommitsSinceRelease(currentVersion)
 	conventionalCommits := parseConventionalCommits(commits)
-	changelog := generateChangelog(conventionalCommits)
+	changelog := generateChangelog(conventionalCommits, g.ProjectURL)
 
 	title := generatePrTitle(nextVersion)
 	description := createPrDescription(nextVersion, changelog)

@@ -28,6 +28,7 @@ type ConventionalCommit struct {
 	Type    string `json:"type"`
 	Scope   string `json:"scope"`
 	Message string `json:"message"`
+	ID      string `json:"id"`
 }
 
 func (g Client) CommitManifest(branchName string, content string) error {
@@ -97,7 +98,7 @@ func (g Client) CommitManifest(branchName string, content string) error {
 
 func (g Client) getCommitsSinceRelease(sinceRelease string) ([]Commit, error) {
 	var url string
-	if sinceRelease == "0.0.1" || sinceRelease == "" {
+	if sinceRelease == "0.1.0" || sinceRelease == "" {
 		url = fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/commits", g.ProjectID)
 	} else {
 		url = fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/commits?since=%s", g.ProjectID, sinceRelease)
@@ -137,6 +138,7 @@ func parseConventionalCommits(commits []Commit) []ConventionalCommit {
 			conventionalCommits = append(conventionalCommits, ConventionalCommit{
 				Type:    strings.TrimSpace(parts[0]),
 				Message: strings.TrimSpace(parts[1]),
+				ID:      commit.ID,
 			})
 		}
 	}
@@ -145,7 +147,7 @@ func parseConventionalCommits(commits []Commit) []ConventionalCommit {
 }
 
 // generateChangelog generates a changelog from conventional commits
-func generateChangelog(commits []ConventionalCommit) string {
+func generateChangelog(commits []ConventionalCommit, projectURL string) string {
 	// Map to store commits grouped by type
 	commitsByType := make(map[string][]ConventionalCommit)
 
@@ -169,7 +171,9 @@ func generateChangelog(commits []ConventionalCommit) string {
 
 		// Iterate over commits for the current type
 		for _, commit := range commitsByType[commitType] {
-			changelogBuffer.WriteString(fmt.Sprintf("- %s\n", commit.Message))
+			// Add a link to the commit
+			commitLink := fmt.Sprintf("[%s](%s/commit/%s)", commit.Message, projectURL, commit.ID)
+			changelogBuffer.WriteString(fmt.Sprintf("- %s\n", commitLink))
 		}
 
 		changelogBuffer.WriteString("\n") // Add a newline between sections
