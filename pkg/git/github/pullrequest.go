@@ -1,4 +1,4 @@
-package gitlab
+package github
 
 import (
 	"bytes"
@@ -10,12 +10,13 @@ import (
 	"net/http"
 )
 
-type MergeRequest struct {
+type PullRequest struct {
 	ID           int    `json:"id"`
-	IID          int    `json:"iid"`
-	SourceBranch string `json:"source_branch"`
-	TargetBranch string `json:"target_branch"`
+	Number       int    `json:"number"`
 	Title        string `json:"title"`
+	State        string `json:"state"`
+	SourceBranch string `json:"head_ref"`
+	TargetBranch string `json:"base_ref"`
 }
 
 func (g Client) CheckCreatePullRequest(source string, target string, currentVersion string, nextVersion string) error {
@@ -27,10 +28,10 @@ func (g Client) CheckCreatePullRequest(source string, target string, currentVers
 }
 
 func (g Client) CreatePullRequest(source string, target string, currentVersion string, nextVersion string) error {
-	url := fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID)
+	url := fmt.Sprintf("%s/repos/%s/pulls", g.ApiURL, g.Repository)
 
 	// Check if a pull request with the same source and target branches already exists
-	existingPrID, err := g.getExistingPullRequestID(source, target)
+	existingPrNumber, err := g.getExistingPullRequestNumber(source, target)
 	if err != nil {
 		return err
 	}
@@ -43,10 +44,10 @@ func (g Client) CreatePullRequest(source string, target string, currentVersion s
 	description := naming.CreatePrDescription(nextVersion, changelog)
 
 	payload := map[string]interface{}{
-		"source_branch": source,
-		"target_branch": target,
-		"title":         title,
-		"description":   description,
+		"title": title,
+		"body":  description,
+		"head":  source,
+		"base":  target,
 	}
 
 	var req *http.Request
@@ -56,11 +57,10 @@ func (g Client) CreatePullRequest(source string, target string, currentVersion s
 		return err
 	}
 
-	if existingPrID != 0 {
+	if existingPrNumber != 0 {
 		// If the pull request already exists, update its description
-		url = fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, existingPrID)
-		fmt.Println(url)
-		req, err = http.NewRequest("PUT", url, bytes.NewBuffer(jsonPayload))
+		url = fmt.Sprintf("%s/repos/%s/pulls/%d", g.ApiURL, g.Repository, existingPrNumber)
+		req, err = http.NewRequest("PATCH", url, bytes.NewBuffer(jsonPayload))
 		if err != nil {
 			return err
 		}
@@ -73,7 +73,7 @@ func (g Client) CreatePullRequest(source string, target string, currentVersion s
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
+	req.Header.Set("Authorization", "Bearer "+g.AccessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -87,7 +87,7 @@ func (g Client) CreatePullRequest(source string, target string, currentVersion s
 		return fmt.Errorf("failed to create/update pull request. Status code: %d, Body: %s", resp.StatusCode, body)
 	}
 
-	if existingPrID != 0 {
+	if existingPrNumber != 0 {
 		fmt.Println("Pull request updated successfully.")
 	} else {
 		fmt.Println("Pull request created successfully.")
@@ -96,16 +96,16 @@ func (g Client) CreatePullRequest(source string, target string, currentVersion s
 	return nil
 }
 
-// getExistingPullRequestID retrieves the ID of an existing pull request with the same source and target branches
-func (g Client) getExistingPullRequestID(source, target string) (int, error) {
-	url := fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID)
+// getExistingPullRequestNumber retrieves the number of an existing pull request with the same source and target branches
+func (g Client) getExistingPullRequestNumber(source, target string) (int, error) {
+	url := fmt.Sprintf("%s/repos/%s/pulls", g.ApiURL, g.Repository)
 
-	// Fetch all merge requests
+	// Fetch all pull requests
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return 0, err
 	}
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
+	req.Header.Set("Authorization", "Bearer "+g.AccessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -116,29 +116,19 @@ func (g Client) getExistingPullRequestID(source, target string) (int, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return 0, fmt.Errorf("failed to fetch merge requests. Status code: %d, Body: %s", resp.StatusCode, body)
+		return 0, fmt.Errorf("failed to fetch pull requests. Status code: %d, Body: %s", resp.StatusCode, body)
 	}
 
-	var mergeRequests []struct {
-		ID           int    `json:"id"`
-		IID          int    `json:"iid"`
-		SourceBranch string `json:"source_branch"`
-		TargetBranch string `json:"target_branch"`
-		State        string `json:"state"`
-		Title        string `json:"title"`
-	}
+	var pullRequests []PullRequest
 
-	if err := json.NewDecoder(resp.Body).Decode(&mergeRequests); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&pullRequests); err != nil {
 		return 0, err
 	}
 
-	// Find the ID of the existing pull request with the same source and target branches
-	for _, pr := range mergeRequests {
-		if pr.SourceBranch == source && pr.TargetBranch == target && pr.State == "opened" {
-			if pr.IID != 0 {
-				return pr.IID, nil
-			}
-			return pr.ID, nil
+	// Find the number of the existing pull request with the same source and target branches
+	for _, pr := range pullRequests {
+		if pr.SourceBranch == source && pr.TargetBranch == target && pr.State == "open" {
+			return pr.Number, nil
 		}
 	}
 

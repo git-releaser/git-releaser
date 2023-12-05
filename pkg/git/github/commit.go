@@ -1,27 +1,20 @@
-package gitlab
+package github
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/thschue/git-releaser/pkg/changelog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
-)
 
-// ConventionalCommit represents a conventional commit structure
-type ConventionalCommit struct {
-	Type    string `json:"type"`
-	Scope   string `json:"scope"`
-	Message string `json:"message"`
-	ID      string `json:"id"`
-}
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
+)
 
 func (g Client) CommitManifest(branchName string, content string) error {
 	filePath := ".git-releaser-manifest.json"
@@ -91,16 +84,16 @@ func (g Client) CommitManifest(branchName string, content string) error {
 func (g Client) getCommitsSinceRelease(sinceRelease string) ([]changelog.Commit, error) {
 	var url string
 	if sinceRelease == "0.1.0" || sinceRelease == "" {
-		url = fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/commits", g.ProjectID)
+		url = fmt.Sprintf("https://%s/repos/%s/commits", g.ApiURL, g.Repository)
 	} else {
-		url = fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/commits?since=%s", g.ProjectID, sinceRelease)
+		url = fmt.Sprintf("%s/repos/%s/commits?since=%s", g.ApiURL, g.Repository, sinceRelease)
 	}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
+	req.Header.Set("Authorization", "Bearer "+g.AccessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

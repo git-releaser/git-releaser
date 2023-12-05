@@ -18,6 +18,8 @@ var (
 	projectURL string
 	projectId  int
 	userId     string
+	provider   string
+	repository string
 )
 
 // updateCmd represents the update command
@@ -35,18 +37,25 @@ to quickly create a Cobra application.`,
 		apiURL := viper.GetString("API_URL")
 		projectURL := viper.GetString("PROJECT_URL")
 		projectId := viper.GetInt("PROJECT_ID")
-
+		provider := viper.GetString("PROVIDER")
+		repository := viper.GetString("REPOSITORY")
+		userId := viper.GetString("USER_ID")
 		additionalConfig := make(map[string]string)
 
 		if apiURL != "" {
 			additionalConfig["apiUrl"] = apiURL
 		}
+
+		if repository != "" {
+			additionalConfig["repository"] = repository
+		}
+
 		if projectId != 0 {
 			additionalConfig["projectId"] = fmt.Sprintf("%d", projectId)
 		}
 
 		g := git.NewGitClient(git.GitConfig{
-			Provider:         "gitlab",
+			Provider:         provider,
 			AccessToken:      token,
 			UserId:           userId,
 			ProjectUrl:       projectURL,
@@ -82,6 +91,8 @@ func init() {
 	UpdateCmd.Flags().StringVarP(&projectURL, "project-url", "p", "", "project url")
 	UpdateCmd.Flags().IntVarP(&projectId, "project-id", "i", 0, "project id")
 	UpdateCmd.Flags().StringVarP(&userId, "user-id", "u", "", "user id")
+	UpdateCmd.Flags().StringVarP(&provider, "provider", "g", "github", "git provider")
+	UpdateCmd.Flags().StringVarP(&repository, "repository", "r", "", "github repository")
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
