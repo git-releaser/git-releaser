@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func (g GitLabClient) CheckCreateBranch() (string, error) {
+func (g Client) CheckCreateBranch() (string, error) {
 	version, _ := versioning.GetNextVersion()
 
 	branchName := fmt.Sprintf("release-%s", version.String())
@@ -22,7 +22,7 @@ func (g GitLabClient) CheckCreateBranch() (string, error) {
 	}
 	return branchName, nil
 }
-func (g GitLabClient) branchExists(branchName string) (bool, error) {
+func (g Client) branchExists(branchName string) (bool, error) {
 	url := fmt.Sprintf("%s/projects/%d/repository/branches/%s", g.ApiURL, g.ProjectID, branchName)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -52,7 +52,7 @@ func (g GitLabClient) branchExists(branchName string) (bool, error) {
 	}
 }
 
-func (g GitLabClient) createBranch(branchName string) error {
+func (g Client) createBranch(branchName string) error {
 	url := fmt.Sprintf("%s/projects/%d/repository/branches", g.ApiURL, g.ProjectID)
 
 	payload := map[string]interface{}{

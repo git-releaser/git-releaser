@@ -1,6 +1,6 @@
 package gitlab
 
-type GitLabClient struct {
+type Client struct {
 	UserId      string
 	AccessToken string
 	ApiURL      string
