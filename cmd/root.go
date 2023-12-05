@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/adrg/xdg"
 	"github.com/thschue/git-releaser/cmd/initialize"
+	"github.com/thschue/git-releaser/cmd/release"
 	"github.com/thschue/git-releaser/cmd/update"
 	"os"
 	"path/filepath"
@@ -62,6 +63,7 @@ func init() {
 
 	rootCmd.AddCommand(initialize.InitializeCmd)
 	rootCmd.AddCommand(update.UpdateCmd)
+	rootCmd.AddCommand(release.ReleaseCmd)
 
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", fmt.Sprintf("Default config file (%s/git-releaser/git-releaser.yaml)", xdg.ConfigHome))
