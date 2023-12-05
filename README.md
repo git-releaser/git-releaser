@@ -1,6 +1,4 @@
 # git-releaser
-<<<<<<< Updated upstream
-=======
 
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/git-releaser/git-releaser)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/git-releaser/git-releaser/release.yaml)
@@ -52,4 +50,3 @@ Please read our [contributing guide](./CONTRIBUTING.md).
 <a href="https://github.com/git-releaser/git-releaser/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=git-releaser/git-releaser" />
 </a>
->>>>>>> Stashed changes
