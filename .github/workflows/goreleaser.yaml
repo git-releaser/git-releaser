@@ -9,6 +9,21 @@ defaults:
     shell: bash
 
 jobs:
+  set-release-tag:
+    runs-on: ubuntu-latest
+
+    outputs:
+      id: set-release-tag
+      set-release-tag: ${{ steps.set-release-tag.outputs.RELEASE_TAG }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set release tag
+        id: set-release-tag
+        run: echo "RELEASE_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
   goreleaser:
     permissions:
       contents: write
@@ -36,12 +51,13 @@ jobs:
 
   build-container:
     runs-on: ubuntu-22.04
+    needs: set-release-tag
     permissions:
       contents: write
       packages: write
       id-token: write
     env:
-      IMAGE_TAG: ghcr.io/git-releaser/git-releaser:${GITHUB_REF#refs/tags/}
+      IMAGE_TAG: ghcr.io/git-releaser/git-releaser:${{ needs.set-release-tag.outputs.set-release-tag }}
       IMAGE_NAME: git-releaser
     steps:
       - name: Checkout
@@ -84,5 +100,5 @@ jobs:
       - name: Attach SBOM to release
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         with:
-          tag_name: ${GITHUB_REF#refs/tags/}
+          tag_name: ${{ needs.set-release-tag.outputs.set-release-tag }}
           files: ./sbom-${{ env.IMAGE_NAME }}.spdx.json
