@@ -19,7 +19,11 @@ func GetCurrentVersion() (*semver.Version, error) {
 	byteValue, _ := io.ReadAll(jsonFile)
 
 	var result map[string]interface{}
-	json.Unmarshal([]byte(byteValue), &result)
+	err = json.Unmarshal([]byte(byteValue), &result)
+	if err != nil {
+		return nil, err
+	}
+
 	version, err := semver.NewVersion(result["version"].(string))
 	if err != nil {
 		return nil, err
