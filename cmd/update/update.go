@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/thschue/git-releaser/pkg/git/gitlab"
+	"github.com/thschue/git-releaser/pkg/git"
 	"github.com/thschue/git-releaser/pkg/versioning"
 )
 
@@ -35,14 +35,24 @@ to quickly create a Cobra application.`,
 		projectURL := viper.GetString("PROJECT_URL")
 		projectId := viper.GetInt("PROJECT_ID")
 
-		g := gitlab.GitLabClient{
-			AccessToken: token,
-			ApiURL:      apiURL,
-			ProjectURL:  projectURL,
-			ProjectID:   projectId,
-			UserId:      userId,
+		additionalConfig := make(map[string]string)
+
+		if apiURL != "" {
+			additionalConfig["apiUrl"] = apiURL
+		}
+		if projectId != 0 {
+			additionalConfig["projectId"] = fmt.Sprintf("%d", projectId)
 		}
 
+		g := git.NewGitClient(git.GitConfig{
+			Provider:         "gitlab",
+			AccessToken:      token,
+			UserId:           userId,
+			ProjectUrl:       projectURL,
+			AdditionalConfig: additionalConfig,
+		})
+
+		fmt.Println(g)
 		branch, err := g.CheckCreateBranch()
 		if err != nil {
 			fmt.Println(err)
@@ -58,7 +68,6 @@ to quickly create a Cobra application.`,
 		fmt.Println(branch)
 		err = g.CheckCreatePullRequest(branch, "main")
 		if err != nil {
-			fmt.Println(g.ProjectID)
 			panic(err)
 		}
 	},

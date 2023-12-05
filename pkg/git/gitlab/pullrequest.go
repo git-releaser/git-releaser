@@ -17,7 +17,7 @@ type MergeRequest struct {
 	Title        string `json:"title"`
 }
 
-func (g GitLabClient) CheckCreatePullRequest(source string, target string) error {
+func (g Client) CheckCreatePullRequest(source string, target string) error {
 	// check if branch exists in gitlab
 	exists, err := g.doesPullRequestExist(source)
 	if err != nil {
@@ -33,7 +33,7 @@ func (g GitLabClient) CheckCreatePullRequest(source string, target string) error
 	return nil
 }
 
-func (g GitLabClient) doesPullRequestExist(sourceBranch string) (bool, error) {
+func (g Client) doesPullRequestExist(sourceBranch string) (bool, error) {
 	/*
 		url := fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID)
 
@@ -72,7 +72,7 @@ func (g GitLabClient) doesPullRequestExist(sourceBranch string) (bool, error) {
 	return false, nil
 }
 
-func (g GitLabClient) CreatePullRequest(source string, target string) error {
+func (g Client) CreatePullRequest(source string, target string) error {
 	url := fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID)
 
 	version, _ := versioning.GetNextVersion()

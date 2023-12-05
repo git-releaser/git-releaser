@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func (g GitLabClient) CommitManifest(branchName string, content string) error {
+func (g Client) CommitManifest(branchName string, content string) error {
 	filePath := ".git-releaser-manifest.json"
 
 	repository, err := git.PlainOpen("./")
