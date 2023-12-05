@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/thschue/git-releaser/pkg/git"
+	"github.com/thschue/git-releaser/pkg/manifest"
 	"github.com/thschue/git-releaser/pkg/versioning"
 )
 
@@ -52,13 +53,15 @@ to quickly create a Cobra application.`,
 			AdditionalConfig: additionalConfig,
 		})
 
+		currentVersion, _ := manifest.GetCurrentVersion()
+		nextVersion, _ := versioning.GetNextVersion()
+
 		fmt.Println(g)
-		branch, err := g.CheckCreateBranch()
+		branch, err := g.CheckCreateBranch(nextVersion.String())
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		nextVersion, _ := versioning.GetNextVersion()
 		content := fmt.Sprintf(`{"version": "%s"}`, nextVersion.String())
 		err = g.CommitManifest(branch, content)
 		if err != nil {
@@ -66,7 +69,7 @@ to quickly create a Cobra application.`,
 		}
 
 		fmt.Println(branch)
-		err = g.CheckCreatePullRequest(branch, "main")
+		err = g.CheckCreatePullRequest(branch, "main", currentVersion.String(), nextVersion.String())
 		if err != nil {
 			panic(err)
 		}
