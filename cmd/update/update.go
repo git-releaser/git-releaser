@@ -45,12 +45,14 @@ to quickly create a Cobra application.`,
 		}
 
 		g := git.NewGitClient(git.GitConfig{
+			Provider:         "gitlab",
 			AccessToken:      token,
 			UserId:           userId,
 			ProjectUrl:       projectURL,
 			AdditionalConfig: additionalConfig,
 		})
 
+		fmt.Println(g)
 		branch, err := g.CheckCreateBranch()
 		if err != nil {
 			fmt.Println(err)

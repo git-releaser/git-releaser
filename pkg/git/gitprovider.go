@@ -1,6 +1,7 @@
 package git
 
 import (
+	"github.com/thschue/git-releaser/pkg/git/github"
 	"github.com/thschue/git-releaser/pkg/git/gitlab"
 	"log"
 	"strconv"
@@ -32,6 +33,13 @@ func NewGitClient(config GitConfig) GitProvider {
 			AccessToken: config.AccessToken,
 			ApiURL:      config.AdditionalConfig["apiUrl"],
 			ProjectID:   projectID,
+			ProjectURL:  config.ProjectUrl,
+		}
+
+	case "github":
+		return &github.Client{
+			UserId:      config.UserId,
+			AccessToken: config.AccessToken,
 			ProjectURL:  config.ProjectUrl,
 		}
 	}
