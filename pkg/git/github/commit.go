@@ -82,7 +82,7 @@ func (g Client) CommitManifest(branchName string, content string, version string
 	return nil
 }
 
-func (g Client) getCommitsSinceRelease(sinceRelease string) ([]changelog.Commit, error) {
+func (g Client) GetCommitsSinceRelease(sinceRelease string) ([]changelog.Commit, error) {
 	var url string
 	if sinceRelease == "0.1.0" || sinceRelease == "" {
 		url = fmt.Sprintf("https://%s/repos/%s/commits", g.ApiURL, g.Repository)

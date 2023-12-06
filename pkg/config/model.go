@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"gopkg.in/yaml.v3"
 	"os"
 )
@@ -17,6 +16,12 @@ type Config struct {
 	APIUrl        string            `yaml:"api_url"`
 	ProjectID     int               `yaml:"project_id"`
 	Repository    string            `yaml:"repository,omitempty"`
+	Versioning    VersioningConfig  `yaml:"versioning"`
+}
+
+type VersioningConfig struct {
+	BumpMinorPreMajor      bool `yaml:"bump_minor_pre_major"`
+	BumpPatchMinorPreMajor bool `yaml:"bump_patch_minor_pre_major"`
 }
 
 type ExtraFileConfig struct {
@@ -30,8 +35,6 @@ func ReadConfig(filename string) (Config, error) {
 	if err != nil {
 		return config, err
 	}
-
-	fmt.Println(string(file))
 
 	err = yaml.Unmarshal(file, &config)
 	if err != nil {

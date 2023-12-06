@@ -54,7 +54,7 @@ to quickly create a Cobra application.`,
 		}
 
 		currentVersion, _ := manifest.GetCurrentVersion()
-		nextVersion, isNewVersion := versioning.GetNextVersion()
+		nextVersion, isNewVersion := versioning.GetNextVersion(conf.Versioning)
 
 		releaseExists, err := g.CheckRelease(currentVersion.String())
 		if err != nil {
@@ -86,7 +86,6 @@ to quickly create a Cobra application.`,
 			fmt.Println("Could not update the Repository: " + err.Error())
 		}
 
-		fmt.Println(branch)
 		err = g.CheckCreatePullRequest(branch, conf.TargetBranch, currentVersion.String(), nextVersion.String())
 		if err != nil {
 			panic(err)
