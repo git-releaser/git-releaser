@@ -54,7 +54,7 @@ to quickly create a Cobra application.`,
 		}
 
 		currentVersion, _ := manifest.GetCurrentVersion()
-		nextVersion, isNewVersion := versioning.GetNextVersion()
+		nextVersion, isNewVersion := versioning.GetNextVersion(conf.Versioning)
 
 		releaseExists, err := g.CheckRelease(currentVersion.String())
 		if err != nil {

@@ -17,6 +17,12 @@ type Config struct {
 	APIUrl        string            `yaml:"api_url"`
 	ProjectID     int               `yaml:"project_id"`
 	Repository    string            `yaml:"repository,omitempty"`
+	Versioning    VersioningConfig  `yaml:"versioning"`
+}
+
+type VersioningConfig struct {
+	BumpMinorPreMajor      bool `yaml:"bump_minor_pre_major"`
+	BumpPatchMinorPreMajor bool `yaml:"bump_patch_minor_pre_major"`
 }
 
 type ExtraFileConfig struct {
