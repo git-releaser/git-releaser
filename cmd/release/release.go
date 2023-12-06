@@ -67,7 +67,7 @@ to quickly create a Cobra application.`,
 			fmt.Println(err)
 		}
 
-		err = g.CreateRelease(currentVersion.String(), "New Release")
+		err = g.CreateRelease("main", currentVersion.String(), "New Release")
 		if err != nil {
 			fmt.Println(err)
 		}
