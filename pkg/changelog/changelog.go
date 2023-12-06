@@ -3,6 +3,7 @@ package changelog
 import (
 	"bytes"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -21,20 +22,34 @@ type Commit struct {
 	Timestamp string `json:"timestamp"`
 }
 
+var validCommitTypes = map[string]string{
+	"feat":  "Features",
+	"fix":   "Bug Fixes",
+	"chore": "Chores",
+	"docs":  "Documentation",
+	// Add more types as needed
+}
+
 func ParseConventionalCommits(commits []Commit) []ConventionalCommit {
 	var conventionalCommits []ConventionalCommit
+	var commitTypes []string
+	for k := range validCommitTypes {
+		commitTypes = append(commitTypes, k)
+	}
 
 	for _, commit := range commits {
 		parts := strings.SplitN(commit.Message, ":", 2)
 		if len(parts) == 2 {
-			conventionalCommits = append(conventionalCommits, ConventionalCommit{
-				Type:    strings.TrimSpace(parts[0]),
-				Message: strings.TrimSpace(parts[1]),
-				ID:      commit.ID,
-			})
+			if slices.Contains(commitTypes, strings.TrimSpace(parts[0])) {
+				message := strings.Split(strings.TrimSpace(parts[1]), "\n")[0]
+				conventionalCommits = append(conventionalCommits, ConventionalCommit{
+					Type:    strings.TrimSpace(parts[0]),
+					Message: message,
+					ID:      commit.ID,
+				})
+			}
 		}
 	}
-
 	return conventionalCommits
 }
 
@@ -59,7 +74,7 @@ func GenerateChangelog(commits []ConventionalCommit, projectURL string) string {
 	// Iterate over commit types in sorted order
 	for _, commitType := range getSortedKeys(commitsByType) {
 		// Add heading for the commit type
-		changelogBuffer.WriteString(fmt.Sprintf("## %s\n", commitType))
+		changelogBuffer.WriteString(fmt.Sprintf("## %s\n", validCommitTypes[commitType]))
 
 		// Iterate over commits for the current type
 		for _, commit := range commitsByType[commitType] {

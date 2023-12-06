@@ -36,7 +36,7 @@ func (g Client) CreatePullRequest(source string, target string, currentVersion s
 		return err
 	}
 
-	commits, _ := g.getCommitsSinceRelease(currentVersion)
+	commits, _ := g.GetCommitsSinceRelease(currentVersion)
 	conventionalCommits := changelog.ParseConventionalCommits(commits)
 	changelog := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 

@@ -1,22 +1,20 @@
 /*
 Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 */
-package update
+package changelog
 
 import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/thschue/git-releaser/pkg/changelog"
 	"github.com/thschue/git-releaser/pkg/config"
 	"github.com/thschue/git-releaser/pkg/git"
 	"github.com/thschue/git-releaser/pkg/helpers"
-	"github.com/thschue/git-releaser/pkg/manifest"
-	"github.com/thschue/git-releaser/pkg/versioning"
 )
 
-// updateCmd represents the update command
-var UpdateCmd = &cobra.Command{
-	Use:   "update",
+var ChangeLogCmd = &cobra.Command{
+	Use:   "changelog",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -53,54 +51,26 @@ to quickly create a Cobra application.`,
 			conf.TargetBranch = "main"
 		}
 
-		currentVersion, _ := manifest.GetCurrentVersion()
-		nextVersion, isNewVersion := versioning.GetNextVersion(conf.Versioning)
-
-		releaseExists, err := g.CheckRelease(currentVersion.String())
+		commits, err := g.GetCommitsSinceRelease(viper.GetString("since_version"))
 		if err != nil {
-			fmt.Println("Could not check for Release: " + err.Error())
+			fmt.Println(err)
 		}
-
-		if !releaseExists {
-			fmt.Println("Running release for version " + currentVersion.String())
-			err = g.CreateRelease(conf.TargetBranch, currentVersion.String(), "New Release")
-			if err != nil {
-				fmt.Println(err)
-			}
-			return
-		}
-
-		if !isNewVersion {
-			fmt.Println("No new version will be created")
-			return
-		}
-
-		branch, err := g.CheckCreateBranch(conf.TargetBranch, nextVersion.String())
-		if err != nil {
-			fmt.Println("Could not check for Branch: " + err.Error())
-		}
-
-		content := fmt.Sprintf(`{"version": "%s"}`, nextVersion.String())
-		err = g.CommitManifest(branch, content, nextVersion.String(), conf.VersionPrefix, conf.ExtraFiles)
-		if err != nil {
-			fmt.Println("Could not update the Repository: " + err.Error())
-		}
-
-		err = g.CheckCreatePullRequest(branch, conf.TargetBranch, currentVersion.String(), nextVersion.String())
-		if err != nil {
-			panic(err)
-		}
+		conventionalCommits := changelog.ParseConventionalCommits(commits)
+		log := changelog.GenerateChangelog(conventionalCommits, viper.GetString("project_url"))
+		fmt.Println("Last Version: " + viper.GetString("since_version"))
+		fmt.Println(log)
 	},
 }
 
 func init() {
-	UpdateCmd.Flags().StringP("token", "t", viper.GetString("token"), "access token")
-	UpdateCmd.Flags().StringP("api_url", "a", viper.GetString("api_url"), "api url")
-	UpdateCmd.Flags().StringP("project_url", "p", viper.GetString("project_url"), "project url")
-	UpdateCmd.Flags().IntP("project_id", "i", viper.GetInt("project_id"), "project id")
-	UpdateCmd.Flags().StringP("user_id", "u", viper.GetString("user_id"), "user id")
-	UpdateCmd.Flags().StringP("provider", "g", "github", "git provider")
-	UpdateCmd.Flags().StringP("repository", "r", viper.GetString("repository"), "github repository")
-	UpdateCmd.Flags().StringP("target_branch", "b", viper.GetString("target_branch"), "target branch")
-	helpers.BindViperFlags(UpdateCmd, viper.GetViper())
+	ChangeLogCmd.Flags().StringP("token", "t", viper.GetString("token"), "access token")
+	ChangeLogCmd.Flags().StringP("api_url", "a", viper.GetString("api_url"), "api url")
+	ChangeLogCmd.Flags().StringP("project_url", "p", viper.GetString("project_url"), "project url")
+	ChangeLogCmd.Flags().IntP("project_id", "i", viper.GetInt("project_id"), "project id")
+	ChangeLogCmd.Flags().StringP("user_id", "u", viper.GetString("user_id"), "user id")
+	ChangeLogCmd.Flags().StringP("provider", "g", "github", "git provider")
+	ChangeLogCmd.Flags().StringP("repository", "r", viper.GetString("repository"), "github repository")
+	ChangeLogCmd.Flags().StringP("target_branch", "b", viper.GetString("target_branch"), "target branch")
+	ChangeLogCmd.Flags().StringP("since_version", "l", viper.GetString("since_version"), "version")
+	helpers.BindViperFlags(ChangeLogCmd, viper.GetViper())
 }

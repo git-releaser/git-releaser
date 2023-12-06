@@ -2,6 +2,7 @@ package git
 
 import (
 	"fmt"
+	"github.com/thschue/git-releaser/pkg/changelog"
 	"github.com/thschue/git-releaser/pkg/config"
 	"github.com/thschue/git-releaser/pkg/git/github"
 	"github.com/thschue/git-releaser/pkg/git/gitlab"
@@ -24,6 +25,8 @@ type GitProvider interface {
 	CommitManifest(branchName string, content string, version string, versionPrefix string, extraFiles []config.ExtraFileConfig) error
 	CreateRelease(baseBranch string, version string, description string) error
 	CheckRelease(version string) (bool, error)
+
+	GetCommitsSinceRelease(version string) ([]changelog.Commit, error)
 }
 
 func NewGitClient(config GitConfig) GitProvider {

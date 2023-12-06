@@ -12,6 +12,7 @@ import (
 	releaserconfig "github.com/thschue/git-releaser/pkg/config"
 	"github.com/thschue/git-releaser/pkg/file"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"time"
@@ -102,14 +103,15 @@ func (g Client) CommitManifest(branchName string, content string, version string
 	return nil
 }
 
-func (g Client) getCommitsSinceRelease(sinceRelease string) ([]changelog.Commit, error) {
-	var url string
+func (g Client) GetCommitsSinceRelease(sinceRelease string) ([]changelog.Commit, error) {
+	var giturl string
 	if sinceRelease == "0.1.0" || sinceRelease == "" {
-		url = fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/commits", g.ProjectID)
+		giturl = fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/commits", g.ProjectID)
 	} else {
-		url = fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/commits?since=%s", g.ProjectID, sinceRelease)
+		encodedRelease := url.QueryEscape(sinceRelease)
+		giturl = fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/commits?since=%s", g.ProjectID, encodedRelease)
 	}
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", giturl, nil)
 	if err != nil {
 		return nil, err
 	}
