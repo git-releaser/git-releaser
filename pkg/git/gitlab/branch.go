@@ -8,11 +8,11 @@ import (
 	"net/http"
 )
 
-func (g Client) CheckCreateBranch(version string) (string, error) {
+func (g Client) CheckCreateBranch(baseBranch string, version string) (string, error) {
 	branchName := fmt.Sprintf("release-%s", version)
 	branchExists, _ := g.branchExists(branchName)
 	if !branchExists {
-		err := g.createBranch(branchName)
+		err := g.createBranch(baseBranch, branchName)
 		if err != nil {
 			return "", err
 		}
@@ -49,12 +49,12 @@ func (g Client) branchExists(branchName string) (bool, error) {
 	}
 }
 
-func (g Client) createBranch(branchName string) error {
+func (g Client) createBranch(baseBranch string, branchName string) error {
 	url := fmt.Sprintf("%s/projects/%d/repository/branches", g.ApiURL, g.ProjectID)
 
 	payload := map[string]interface{}{
 		"branch": branchName,
-		"ref":    "main",
+		"ref":    baseBranch,
 	}
 
 	jsonPayload, err := json.Marshal(payload)

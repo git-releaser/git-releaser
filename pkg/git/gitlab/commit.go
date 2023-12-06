@@ -9,6 +9,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/thschue/git-releaser/pkg/changelog"
+	releaserconfig "github.com/thschue/git-releaser/pkg/config"
+	"github.com/thschue/git-releaser/pkg/file"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -23,7 +25,7 @@ type ConventionalCommit struct {
 	ID      string `json:"id"`
 }
 
-func (g Client) CommitManifest(branchName string, content string) error {
+func (g Client) CommitManifest(branchName string, content string, version string, versionPrefix string, extraFiles []releaserconfig.ExtraFileConfig) error {
 	filePath := ".git-releaser-manifest.json"
 
 	repository, err := git.PlainOpen("./")
@@ -46,6 +48,18 @@ func (g Client) CommitManifest(branchName string, content string) error {
 	_, err = worktree.Add(filePath)
 	if err != nil {
 		return err
+	}
+
+	for _, extraFile := range extraFiles {
+		err = file.ReplaceVersion(extraFile, version, versionPrefix)
+		if err != nil {
+			fmt.Println("Could not update version in file: " + extraFile.Path)
+		}
+
+		_, err = worktree.Add(extraFile.Path)
+		if err != nil {
+			fmt.Println("Could not add file to git: " + filepath.Join(worktree.Filesystem.Root(), extraFile.Path))
+		}
 	}
 
 	// Commit the changes

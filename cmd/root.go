@@ -5,15 +5,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/adrg/xdg"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/thschue/git-releaser/cmd/initialize"
 	"github.com/thschue/git-releaser/cmd/release"
 	"github.com/thschue/git-releaser/cmd/update"
 	"os"
-	"path/filepath"
-
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -66,28 +63,21 @@ func init() {
 	rootCmd.AddCommand(release.ReleaseCmd)
 
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", fmt.Sprintf("Default config file (%s/git-releaser/git-releaser.yaml)", xdg.ConfigHome))
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "Default config file (.git-releaser-config.yaml)")
 }
 
 func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		configDir := filepath.Join(xdg.ConfigHome, "git-releaser")
-
-		viper.AddConfigPath(configDir)
-		viper.SetConfigType("yaml")
-		viper.SetConfigName("git-releaser")
-
-		_ = viper.SafeWriteConfig()
-	}
-
+	viper.SetConfigName(".git-releaser-config") // name of the config file (without extension)
+	viper.AddConfigPath("/etc/myapp/")          // path to look for the config file in
+	viper.AddConfigPath("$HOME/.myapp")         // call multiple times to add many search paths
+	viper.AddConfigPath(".")                    // look for the config in the working directory
 	viper.SetEnvPrefix("GIT_RELEASER")
-	viper.AutomaticEnv() // read in environment variables that match
+	viper.AutomaticEnv() // automatically read environment variables
 
-	// If a config file is found, read it in.
+	// Read in config file if found
 	if err := viper.ReadInConfig(); err == nil {
-		_ = 1
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	} else {
+		fmt.Println("No config file found, using default values and/or environment variables")
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/thschue/git-releaser/pkg/changelog"
+	releaserconfig "github.com/thschue/git-releaser/pkg/config"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,7 +17,7 @@ import (
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
-func (g Client) CommitManifest(branchName string, content string) error {
+func (g Client) CommitManifest(branchName string, content string, version string, versionPrefix string, extraFiles []releaserconfig.ExtraFileConfig) error {
 	filePath := ".git-releaser-manifest.json"
 
 	repository, err := git.PlainOpen("./")

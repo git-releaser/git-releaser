@@ -2,6 +2,8 @@ package naming
 
 import "fmt"
 
+const EnvPrefix = "GIT_RELEASER"
+
 func GeneratePrTitle(version string) string {
 	title := fmt.Sprintf("Release %s", version)
 	return title

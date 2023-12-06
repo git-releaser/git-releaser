@@ -7,19 +7,11 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/thschue/git-releaser/pkg/config"
 	"github.com/thschue/git-releaser/pkg/git"
+	"github.com/thschue/git-releaser/pkg/helpers"
 	"github.com/thschue/git-releaser/pkg/manifest"
 	"github.com/thschue/git-releaser/pkg/versioning"
-)
-
-var (
-	token      string
-	apiURL     string
-	projectURL string
-	projectId  int
-	userId     string
-	provider   string
-	repository string
 )
 
 // updateCmd represents the update command
@@ -33,46 +25,45 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		token := viper.GetString("TOKEN")
-		apiURL := viper.GetString("API_URL")
-		projectURL := viper.GetString("PROJECT_URL")
-		projectId := viper.GetInt("PROJECT_ID")
-		provider := viper.GetString("PROVIDER")
-		repository := viper.GetString("REPOSITORY")
-		userId := viper.GetString("USER_ID")
 		additionalConfig := make(map[string]string)
 
-		if apiURL != "" {
-			additionalConfig["apiUrl"] = apiURL
+		if viper.GetString("repository") != "" {
+			additionalConfig["repository"] = viper.GetString("repository")
 		}
 
-		if repository != "" {
-			additionalConfig["repository"] = repository
-		}
-
-		if projectId != 0 {
-			additionalConfig["projectId"] = fmt.Sprintf("%d", projectId)
+		if viper.GetInt("project_id") != 0 {
+			additionalConfig["projectId"] = fmt.Sprintf("%d", viper.GetInt("project_id"))
 		}
 
 		g := git.NewGitClient(git.GitConfig{
-			Provider:         provider,
-			AccessToken:      token,
-			UserId:           userId,
-			ProjectUrl:       projectURL,
+			Provider:         viper.GetString("provider"),
+			AccessToken:      viper.GetString("token"),
+			UserId:           viper.GetString("user_id"),
+			ProjectUrl:       viper.GetString("project_url"),
+			ApiUrl:           viper.GetString("api_url"),
 			AdditionalConfig: additionalConfig,
 		})
+
+		conf, err := config.ReadConfig(viper.ConfigFileUsed())
+		if err != nil {
+			fmt.Println("Could not read config file")
+		}
+
+		if conf.TargetBranch == "" {
+			conf.TargetBranch = "main"
+		}
 
 		currentVersion, _ := manifest.GetCurrentVersion()
 		nextVersion, isNewVersion := versioning.GetNextVersion()
 
 		releaseExists, err := g.CheckRelease(currentVersion.String())
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("Could not check for Release: " + err.Error())
 		}
 
 		if !releaseExists {
 			fmt.Println("Running release for version " + currentVersion.String())
-			err = g.CreateRelease(currentVersion.String(), "New Release")
+			err = g.CreateRelease(conf.TargetBranch, currentVersion.String(), "New Release")
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -84,19 +75,19 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		branch, err := g.CheckCreateBranch(nextVersion.String())
+		branch, err := g.CheckCreateBranch(conf.TargetBranch, nextVersion.String())
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("Could not check for Branch: " + err.Error())
 		}
 
 		content := fmt.Sprintf(`{"version": "%s"}`, nextVersion.String())
-		err = g.CommitManifest(branch, content)
+		err = g.CommitManifest(branch, content, nextVersion.String(), conf.VersionPrefix, conf.ExtraFiles)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("Could not update the Repository: " + err.Error())
 		}
 
 		fmt.Println(branch)
-		err = g.CheckCreatePullRequest(branch, "main", currentVersion.String(), nextVersion.String())
+		err = g.CheckCreatePullRequest(branch, conf.TargetBranch, currentVersion.String(), nextVersion.String())
 		if err != nil {
 			panic(err)
 		}
@@ -104,20 +95,13 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	UpdateCmd.Flags().StringVarP(&token, "token", "t", "", "access token")
-	UpdateCmd.Flags().StringVarP(&apiURL, "api-url", "a", "", "api url")
-	UpdateCmd.Flags().StringVarP(&projectURL, "project-url", "p", "", "project url")
-	UpdateCmd.Flags().IntVarP(&projectId, "project-id", "i", 0, "project id")
-	UpdateCmd.Flags().StringVarP(&userId, "user-id", "u", "", "user id")
-	UpdateCmd.Flags().StringVarP(&provider, "provider", "g", "github", "git provider")
-	UpdateCmd.Flags().StringVarP(&repository, "repository", "r", "", "github repository")
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// updateCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// updateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	UpdateCmd.Flags().StringP("token", "t", viper.GetString("token"), "access token")
+	UpdateCmd.Flags().StringP("api_url", "a", viper.GetString("api_url"), "api url")
+	UpdateCmd.Flags().StringP("project_url", "p", viper.GetString("project_url"), "project url")
+	UpdateCmd.Flags().IntP("project_id", "i", viper.GetInt("project_id"), "project id")
+	UpdateCmd.Flags().StringP("user_id", "u", viper.GetString("user_id"), "user id")
+	UpdateCmd.Flags().StringP("provider", "g", "github", "git provider")
+	UpdateCmd.Flags().StringP("repository", "r", viper.GetString("repository"), "github repository")
+	UpdateCmd.Flags().StringP("target_branch", "b", viper.GetString("target_branch"), "target branch")
+	helpers.BindViperFlags(UpdateCmd, viper.GetViper())
 }

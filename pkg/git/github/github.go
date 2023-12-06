@@ -8,7 +8,7 @@ type Client struct {
 	ApiURL      string
 }
 
-func (g Client) CreateRelease(version string, description string) error {
+func (g Client) CreateRelease(baseBranch string, version string, description string) error {
 	return nil
 }
 

@@ -8,11 +8,11 @@ import (
 	"net/http"
 )
 
-func (g Client) CheckCreateBranch(version string) (string, error) {
+func (g Client) CheckCreateBranch(baseBranch string, version string) (string, error) {
 	branchName := fmt.Sprintf("release-%s", version)
 	branchExists, _ := g.branchExists(branchName)
 	if !branchExists {
-		err := g.createBranch(branchName)
+		err := g.createBranch(baseBranch, branchName)
 		if err != nil {
 			return "", err
 		}
@@ -51,9 +51,9 @@ func (g Client) branchExists(branchName string) (bool, error) {
 }
 
 // createBranch creates a branch in a GitHub repository
-func (g Client) createBranch(branchName string) error {
+func (g Client) createBranch(baseBranch string, branchName string) error {
 	url := fmt.Sprintf("%s/repos/%s/git/refs", g.ApiURL, g.Repository)
-	baseSha, err := g.getBaseBranchSHA("main")
+	baseSha, err := g.getBaseBranchSHA(baseBranch)
 	if err != nil {
 		return err
 	}
