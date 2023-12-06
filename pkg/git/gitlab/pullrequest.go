@@ -59,7 +59,6 @@ func (g Client) CreatePullRequest(source string, target string, currentVersion s
 	if existingPrID != 0 {
 		// If the pull request already exists, update its description
 		url = fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, existingPrID)
-		fmt.Println(url)
 		req, err = http.NewRequest("PUT", url, bytes.NewBuffer(jsonPayload))
 		if err != nil {
 			return err

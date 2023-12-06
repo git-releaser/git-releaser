@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"gopkg.in/yaml.v3"
 	"os"
 )
@@ -36,8 +35,6 @@ func ReadConfig(filename string) (Config, error) {
 	if err != nil {
 		return config, err
 	}
-
-	fmt.Println(string(file))
 
 	err = yaml.Unmarshal(file, &config)
 	if err != nil {
