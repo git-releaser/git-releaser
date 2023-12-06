@@ -86,7 +86,6 @@ to quickly create a Cobra application.`,
 			fmt.Println("Could not update the Repository: " + err.Error())
 		}
 
-		fmt.Println(branch)
 		err = g.CheckCreatePullRequest(branch, conf.TargetBranch, currentVersion.String(), nextVersion.String())
 		if err != nil {
 			panic(err)

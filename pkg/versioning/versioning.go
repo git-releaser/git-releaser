@@ -34,7 +34,6 @@ func GetNextVersion(version config.VersioningConfig) (semver.Version, bool) {
 	}
 
 	fmt.Println("Next version: ", nextVersion)
-	fmt.Println("Has next version: ", hasNextVersion)
 
 	return nextVersion, hasNextVersion
 }
