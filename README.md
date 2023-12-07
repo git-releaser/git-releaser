@@ -12,12 +12,11 @@ It is designed to be used in CI/CD pipelines to automate the creation of Git rel
 Currently, `git-releaser` works best with GitLab. GitHub support is planned and more providers can be added in the future.
 
 ![](https://img.shields.io/badge/gitlab-ready-blue)
-![](https://img.shields.io/badge/github-work_in_progress-orange)
+![](https://img.shields.io/badge/github-ready-blue)
 
 # CLI Installation
 
-
-### Linux/Mac via brew
+## Linux/Mac via brew
 
 ```
 brew tap git-releaser/git-releaser
@@ -41,6 +40,16 @@ If you install gcc as suggested, the problem will persist. Therefore, you need t
 </details>
 
 ## Quick Start
+You can either use the CLI tool `git-releaser initialize -p provider` to generate the initial configuration or create it manually.
+
+The most important part of the configuration is the `.git-releaser-manifest.yaml` file which contains the current version of your project. This file should be committed to your repository.
+
+Please note that the first release will be created based on the version specified in the configuration file. Afterward, the version will be updated automatically.
+
+```yaml
+
+### Generate configuration
+```
 
 ### GitLab
 * Create a new [GitLab Personal Access Token](https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html) with `api` scope.
@@ -84,6 +93,9 @@ run-release:
 
 * When this merge request is merged, a new release will be created automatically.
 
+### GitHub
+Take a look at our [GitHub Action](https://github.com/git-release/git-releaser-action) to use `git-releaser` with GitHub.
+
 ### Updating the version in config files
 `git-releaser` can also update the version in config files. To do so, you need to specify the extra files in a `.git-releaser-config.yaml` file:
 
@@ -100,6 +112,7 @@ other_version: 0.0.2
 
 git-releaser will update the version specified n my_version during the release.
 
+###
 
 ## Contributing
 Please read our [contributing guide](./CONTRIBUTING.md).
