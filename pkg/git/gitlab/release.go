@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/thschue/git-releaser/pkg/config"
 	"net/http"
 )
 
@@ -12,11 +13,11 @@ type Release struct {
 	Description string `json:"description"`
 }
 
-func (g Client) CreateRelease(baseBranch string, version string, description string) error {
+func (g Client) CreateRelease(baseBranch string, version config.Versions, description string) error {
 	url := fmt.Sprintf("%s/projects/%d/releases", g.ApiURL, g.ProjectID)
 
 	payload := map[string]interface{}{
-		"tag_name":    version,
+		"tag_name":    version.CurrentVersionSlug,
 		"ref":         baseBranch,
 		"description": description,
 	}

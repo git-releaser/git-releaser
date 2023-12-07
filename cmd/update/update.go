@@ -25,6 +25,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		var versions config.Versions
 		additionalConfig := make(map[string]string)
 
 		if viper.GetString("repository") != "" {
@@ -53,40 +54,42 @@ to quickly create a Cobra application.`,
 			conf.TargetBranch = "main"
 		}
 
-		currentVersion, _ := manifest.GetCurrentVersion()
-		nextVersion, isNewVersion := versioning.GetNextVersion(conf.Versioning)
-
-		releaseExists, err := g.CheckRelease(currentVersion.String())
+		versions.CurrentVersion, _ = manifest.GetCurrentVersion()
+		versions.NextVersion, versions.NewVersion = versioning.GetNextVersion(conf.Versioning)
+		versions.VersionPrefix = conf.Versioning.VersionPrefix
+		versions.CurrentVersionSlug = versions.VersionPrefix + versions.CurrentVersion.String()
+		versions.NextVersionSlug = versions.VersionPrefix + versions.NextVersion.String()
+		releaseExists, err := g.CheckRelease(versions)
 		if err != nil {
 			fmt.Println("Could not check for Release: " + err.Error())
 		}
 
 		if !releaseExists {
-			fmt.Println("Running release for version " + currentVersion.String())
-			err = g.CreateRelease(conf.TargetBranch, currentVersion.String(), "New Release")
+			fmt.Println("Running release for version " + versions.CurrentVersionSlug)
+			err = g.CreateRelease(conf.TargetBranch, versions, "New Release")
 			if err != nil {
 				fmt.Println(err)
 			}
 			return
 		}
 
-		if !isNewVersion {
+		if !versions.NewVersion {
 			fmt.Println("No new version will be created")
 			return
 		}
 
-		branch, err := g.CheckCreateBranch(conf.TargetBranch, nextVersion.String())
+		branch, err := g.CheckCreateBranch(conf.TargetBranch, versions.NextVersionSlug)
 		if err != nil {
 			fmt.Println("Could not check for Branch: " + err.Error())
 		}
 
-		content := fmt.Sprintf(`{"version": "%s"}`, nextVersion.String())
-		err = g.CommitManifest(branch, content, nextVersion.String(), conf.VersionPrefix, conf.ExtraFiles)
+		content := fmt.Sprintf(`{"version": "%s"}`, versions.NextVersion.String())
+		err = g.CommitManifest(branch, content, versions, conf.ExtraFiles)
 		if err != nil {
 			fmt.Println("Could not update the Repository: " + err.Error())
 		}
 
-		err = g.CheckCreatePullRequest(branch, conf.TargetBranch, currentVersion.String(), nextVersion.String())
+		err = g.CheckCreatePullRequest(branch, conf.TargetBranch, versions)
 		if err != nil {
 			panic(err)
 		}

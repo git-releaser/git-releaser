@@ -26,7 +26,7 @@ type ConventionalCommit struct {
 	ID      string `json:"id"`
 }
 
-func (g Client) CommitManifest(branchName string, content string, version string, versionPrefix string, extraFiles []releaserconfig.ExtraFileConfig) error {
+func (g Client) CommitManifest(branchName string, content string, versions releaserconfig.Versions, extraFiles []releaserconfig.ExtraFileConfig) error {
 	filePath := ".git-releaser-manifest.json"
 
 	repository, err := git.PlainOpen("./")
@@ -52,7 +52,12 @@ func (g Client) CommitManifest(branchName string, content string, version string
 	}
 
 	for _, extraFile := range extraFiles {
-		err = file.ReplaceVersion(extraFile, version, versionPrefix)
+		err = file.ReplaceVersionLines(extraFile, versions)
+		if err != nil {
+			fmt.Println("Could not update version in file: " + extraFile.Path)
+		}
+
+		err = file.ReplaceVersionBetweenTags(extraFile, versions)
 		if err != nil {
 			fmt.Println("Could not update version in file: " + extraFile.Path)
 		}
@@ -64,7 +69,7 @@ func (g Client) CommitManifest(branchName string, content string, version string
 	}
 
 	// Commit the changes
-	commit, err := worktree.Commit("chore: update version", &git.CommitOptions{
+	commit, err := worktree.Commit("releaser: update files for version "+versions.NextVersionSlug, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "Your Name",
 			Email: "your.email@example.com",
@@ -105,12 +110,23 @@ func (g Client) CommitManifest(branchName string, content string, version string
 
 func (g Client) GetCommitsSinceRelease(sinceRelease string) ([]changelog.Commit, error) {
 	var giturl string
-	if sinceRelease == "0.1.0" || sinceRelease == "" {
+	var tagDate string
+	var err error
+
+	if sinceRelease != "0.0.0" && sinceRelease != "" {
+		tagDate, err = g.getTagCommitDate(sinceRelease)
+		if err != nil {
+			fmt.Println("Could not get tag date: " + err.Error())
+		}
+	}
+
+	if tagDate == "" {
 		giturl = fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/commits", g.ProjectID)
 	} else {
-		encodedRelease := url.QueryEscape(sinceRelease)
-		giturl = fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/commits?since=%s", g.ProjectID, encodedRelease)
+		giturl = fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/commits?since=%s", g.ProjectID, tagDate)
+		fmt.Println(giturl)
 	}
+
 	req, err := http.NewRequest("GET", giturl, nil)
 	if err != nil {
 		return nil, err
@@ -135,4 +151,36 @@ func (g Client) GetCommitsSinceRelease(sinceRelease string) ([]changelog.Commit,
 	}
 
 	return commits, nil
+}
+
+func (g Client) getTagCommitDate(tag string) (string, error) {
+	tagUrl := fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/tags/%s", g.ProjectID, url.PathEscape(tag))
+	fmt.Println(tagUrl)
+	tagReq, err := http.NewRequest("GET", tagUrl, nil)
+	if err != nil {
+		return "", err
+	}
+
+	tagReq.Header.Set("PRIVATE-TOKEN", g.AccessToken)
+
+	client := &http.Client{}
+	tagResp, err := client.Do(tagReq)
+	if err != nil {
+		return "", err
+	}
+	defer tagResp.Body.Close()
+
+	if tagResp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to get tag details. Status code: %d", tagResp.StatusCode)
+	}
+
+	var tagDetails struct {
+		Commit struct {
+			CommittedDate string `json:"created_at"`
+		} `json:"commit"`
+	}
+	if err := json.NewDecoder(tagResp.Body).Decode(&tagDetails); err != nil {
+		return "", err
+	}
+	return tagDetails.Commit.CommittedDate, nil
 }

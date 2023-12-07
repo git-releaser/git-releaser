@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/thschue/git-releaser/pkg/changelog"
+	"github.com/thschue/git-releaser/pkg/config"
 	"github.com/thschue/git-releaser/pkg/naming"
 	"io"
 	"net/http"
@@ -19,15 +20,15 @@ type PullRequest struct {
 	TargetBranch string `json:"base_ref"`
 }
 
-func (g Client) CheckCreatePullRequest(source string, target string, currentVersion string, nextVersion string) error {
-	err := g.CreatePullRequest(source, target, currentVersion, nextVersion)
+func (g Client) CheckCreatePullRequest(source string, target string, versions config.Versions) error {
+	err := g.CreatePullRequest(source, target, versions)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (g Client) CreatePullRequest(source string, target string, currentVersion string, nextVersion string) error {
+func (g Client) CreatePullRequest(source string, target string, versions config.Versions) error {
 	url := fmt.Sprintf("%s/repos/%s/pulls", g.ApiURL, g.Repository)
 
 	// Check if a pull request with the same source and target branches already exists
@@ -36,12 +37,12 @@ func (g Client) CreatePullRequest(source string, target string, currentVersion s
 		return err
 	}
 
-	commits, _ := g.GetCommitsSinceRelease(currentVersion)
+	commits, _ := g.GetCommitsSinceRelease(versions.CurrentVersionSlug)
 	conventionalCommits := changelog.ParseConventionalCommits(commits)
-	changelog := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
+	cl := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
-	title := naming.GeneratePrTitle(nextVersion)
-	description := naming.CreatePrDescription(nextVersion, changelog)
+	title := naming.GeneratePrTitle(versions.NextVersionSlug)
+	description := naming.CreatePrDescription(versions.NextVersionSlug, cl)
 
 	payload := map[string]interface{}{
 		"title": title,

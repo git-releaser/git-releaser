@@ -1,6 +1,8 @@
 package naming
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const EnvPrefix = "GIT_RELEASER"
 
