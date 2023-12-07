@@ -64,8 +64,12 @@ func (g Client) createPullRequest(source string, target string, versions config.
 		fmt.Println("Pull request updated successfully.")
 	} else {
 		// If the pull request doesn't exist, create a new one
-		_, _, err = g.GHClient.PullRequests.Create(g.Context, owner, repo, newPR)
+		_, response, err := g.GHClient.PullRequests.Create(g.Context, owner, repo, newPR)
 		if err != nil {
+			if response.StatusCode == 403 {
+				fmt.Println("Could not create pull request: " + err.Error())
+				fmt.Println("Please make sure that the access token has the 'repo' scope.")
+			}
 			return err
 		}
 		fmt.Println("Pull request created successfully.")

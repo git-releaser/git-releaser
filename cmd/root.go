@@ -10,6 +10,7 @@ import (
 	"github.com/thschue/git-releaser/cmd/changelog"
 	"github.com/thschue/git-releaser/cmd/initialize"
 	"github.com/thschue/git-releaser/cmd/update"
+	"github.com/thschue/git-releaser/pkg/naming"
 	"os"
 )
 
@@ -63,15 +64,15 @@ func init() {
 	rootCmd.AddCommand(changelog.ChangeLogCmd)
 
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "Default config file (.git-releaser-config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", fmt.Sprintf("Default config file (%s.%s)", naming.DefaultConfigFileName, "yaml"))
 }
 
 func initConfig() {
-	viper.SetConfigName(".git-releaser-config") // name of the config file (without extension)
-	viper.AddConfigPath("/etc/myapp/")          // path to look for the config file in
-	viper.AddConfigPath("$HOME/.myapp")         // call multiple times to add many search paths
-	viper.AddConfigPath(".")                    // look for the config in the working directory
-	viper.SetEnvPrefix("GIT_RELEASER")
+	viper.SetConfigName(naming.DefaultConfigFileName) // name of the config file (without extension)
+	viper.AddConfigPath("/etc/myapp/")                // path to look for the config file in
+	viper.AddConfigPath("$HOME/.myapp")               // call multiple times to add many search paths
+	viper.AddConfigPath(".")                          // look for the config in the working directory
+	viper.SetEnvPrefix(naming.EnvPrefix)
 	viper.AutomaticEnv() // automatically read environment variables
 
 	// Read in config file if found

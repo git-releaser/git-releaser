@@ -105,13 +105,13 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	UpdateCmd.Flags().StringP("token", "t", viper.GetString("token"), "access token")
-	UpdateCmd.Flags().StringP("api_url", "a", viper.GetString("api_url"), "api url")
-	UpdateCmd.Flags().StringP("project_url", "p", viper.GetString("project_url"), "project url")
-	UpdateCmd.Flags().IntP("project_id", "i", viper.GetInt("project_id"), "project id")
-	UpdateCmd.Flags().StringP("user_id", "u", viper.GetString("user_id"), "user id")
-	UpdateCmd.Flags().StringP("provider", "g", "github", "git provider")
-	UpdateCmd.Flags().StringP("repository", "r", viper.GetString("repository"), "github repository")
-	UpdateCmd.Flags().StringP("target_branch", "b", viper.GetString("target_branch"), "target branch")
+	UpdateCmd.Flags().StringP("token", "t", viper.GetString("token"), "Access Token for the Git Provider")
+	UpdateCmd.Flags().StringP("api_url", "a", viper.GetString("api_url"), "(optional) API URL for the Git Provider, automatically set for GitHub and GitLab if using the hosted version")
+	UpdateCmd.Flags().StringP("project_url", "p", viper.GetString("project_url"), "Project URL for the Git Provider")
+	UpdateCmd.Flags().IntP("project_id", "i", viper.GetInt("project_id"), "Project ID when using GitLab")
+	UpdateCmd.Flags().StringP("user_id", "u", viper.GetString("user_id"), "User ID")
+	UpdateCmd.Flags().StringP("provider", "g", "github", "Git Provider")
+	UpdateCmd.Flags().StringP("repository", "r", viper.GetString("repository"), "Repository when using GitHub")
+	UpdateCmd.Flags().StringP("target_branch", "b", viper.GetString("target_branch"), "Target Branch (Default: main)")
 	helpers.BindViperFlags(UpdateCmd, viper.GetViper())
 }

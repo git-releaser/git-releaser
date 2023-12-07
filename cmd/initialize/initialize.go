@@ -6,6 +6,9 @@ package initialize
 import (
 	"errors"
 	"fmt"
+	"github.com/spf13/viper"
+	"github.com/thschue/git-releaser/pkg/helpers"
+	"github.com/thschue/git-releaser/pkg/naming"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -25,7 +28,7 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if _, err := os.Stat(ReleaseManifestFilename); errors.Is(err, os.ErrNotExist) {
-			version := "0.0.1"
+			version := "0.0.0"
 			// write version to .git-releaser-manifest.json
 			manifest, err := os.Create(ReleaseManifestFilename)
 			if err != nil {
@@ -41,10 +44,20 @@ to quickly create a Cobra application.`,
 		} else {
 			fmt.Println(ReleaseManifestFilename + " already exists")
 		}
+
+		if viper.ConfigFileUsed() == "" {
+			// write config to .git-releaser.yaml
+			err := viper.WriteConfigAs(naming.DefaultConfigFileName + ".yaml")
+			if err != nil {
+				return
+			}
+		}
 	},
 }
 
 func init() {
+	InitializeCmd.Flags().StringP("provider", "g", "github", "Git Provider")
+	helpers.BindViperFlags(InitializeCmd, viper.GetViper())
 
 	// Here you will define your flags and configuration settings.
 
