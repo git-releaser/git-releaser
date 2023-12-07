@@ -15,6 +15,7 @@ on:
 env:
   GO_VERSION: "~1.21"
   IMAGE_NAME: "git-releaser"
+
 defaults:
   run:
     shell: bash
@@ -71,6 +72,15 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Run Trivy vulnerability scanner in repo mode
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
 
       - name: Set up Docker Buildx
         id: buildx
