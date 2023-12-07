@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/thschue/git-releaser/cmd/changelog"
 	"github.com/thschue/git-releaser/cmd/initialize"
-	"github.com/thschue/git-releaser/cmd/release"
 	"github.com/thschue/git-releaser/cmd/update"
 	"os"
 )
@@ -61,7 +60,6 @@ func init() {
 
 	rootCmd.AddCommand(initialize.InitializeCmd)
 	rootCmd.AddCommand(update.UpdateCmd)
-	rootCmd.AddCommand(release.ReleaseCmd)
 	rootCmd.AddCommand(changelog.ChangeLogCmd)
 
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")

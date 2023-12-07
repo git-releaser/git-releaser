@@ -17,7 +17,7 @@ import (
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
-func (g Client) CommitManifest(branchName string, content string, version string, versionPrefix string, extraFiles []releaserconfig.ExtraFileConfig) error {
+func (g Client) CommitManifest(branchName string, content string, versions releaserconfig.Versions, extraFiles []releaserconfig.ExtraFileConfig) error {
 	filePath := ".git-releaser-manifest.json"
 
 	repository, err := git.PlainOpen("./")

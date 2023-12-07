@@ -3,6 +3,7 @@ package gitlab
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/thschue/git-releaser/pkg/config"
 	"net/http"
 )
 
@@ -13,7 +14,7 @@ type Tag struct {
 	} `json:"commit"`
 }
 
-func (g Client) CheckRelease(version string) (bool, error) {
+func (g Client) CheckRelease(version config.Versions) (bool, error) {
 	url := fmt.Sprintf("%s/projects/%d/repository/tags", g.ApiURL, g.ProjectID)
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -41,7 +42,7 @@ func (g Client) CheckRelease(version string) (bool, error) {
 
 	// Check if the desired tag is in the list
 	for _, tag := range tags {
-		if tag.Name == version {
+		if tag.Name == version.CurrentVersionSlug {
 			return true, nil
 		}
 	}
