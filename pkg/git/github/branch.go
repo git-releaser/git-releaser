@@ -42,6 +42,7 @@ func (g Client) createBranch(baseBranch string, branchName string) error {
 	// Get the SHA of the base branch
 	baseRef, _, err := g.GHClient.Git.GetRef(g.Context, owner, repo, "refs/heads/"+baseBranch)
 	if err != nil {
+		fmt.Println("Could not get the SHA of the base branch")
 		return err
 	}
 	baseSha := baseRef.GetObject().GetSHA()

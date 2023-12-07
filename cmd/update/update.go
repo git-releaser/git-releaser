@@ -54,6 +54,8 @@ to quickly create a Cobra application.`,
 			}
 		}
 
+		fmt.Println(g)
+
 		if conf.TargetBranch == "" {
 			conf.TargetBranch = "main"
 		}
