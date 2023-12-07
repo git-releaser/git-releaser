@@ -17,7 +17,7 @@ import (
 func CommitManifest(branchName string, userid string, token string, content string, versions config.Versions, extraFiles []config.ExtraFileConfig) error {
 	filePath := ".git-releaser-manifest.json"
 
-	repository, err := git.PlainOpen("./")
+	repository, err := git.PlainOpen(".")
 	if err != nil {
 		return err
 	}
@@ -30,12 +30,14 @@ func CommitManifest(branchName string, userid string, token string, content stri
 	// Create or update the file in the worktree
 	err = os.WriteFile(filepath.Join(worktree.Filesystem.Root(), filePath), []byte(content), 0644)
 	if err != nil {
+		fmt.Println("Could not write file: " + filepath.Join(worktree.Filesystem.Root(), filePath))
 		return err
 	}
 
 	// Add the file to the worktree
 	_, err = worktree.Add(filePath)
 	if err != nil {
+		fmt.Println("Could not add file to git: " + filepath.Join(worktree.Filesystem.Root(), filePath))
 		return err
 	}
 
@@ -65,6 +67,7 @@ func CommitManifest(branchName string, userid string, token string, content stri
 		},
 	})
 	if err != nil {
+		fmt.Println("Could not commit changes")
 		return err
 	}
 
@@ -90,6 +93,7 @@ func CommitManifest(branchName string, userid string, token string, content stri
 	// Push the changes to the remote repository
 	err = repository.Push(&options)
 	if err != nil {
+		fmt.Println("Could not push changes")
 		return err
 	}
 
@@ -100,6 +104,7 @@ func replaceVersionLines(extraFile config.ExtraFileConfig, versions config.Versi
 	// Read the contents of the file
 	content, err := os.ReadFile(extraFile.Path)
 	if err != nil {
+		fmt.Println("Could not read file: " + extraFile.Path)
 		return err
 	}
 
@@ -112,6 +117,7 @@ func replaceVersionLines(extraFile config.ExtraFileConfig, versions config.Versi
 	// Write the modified contents back to the file
 	err = os.WriteFile(extraFile.Path, []byte(modifiedContent), 0644)
 	if err != nil {
+		fmt.Println("Could not write file: " + extraFile.Path)
 		return err
 	}
 
@@ -122,6 +128,7 @@ func replaceVersionBetweenTags(extraFile config.ExtraFileConfig, versions config
 	// Read the contents of the file
 	content, err := os.ReadFile(extraFile.Path)
 	if err != nil {
+		fmt.Println("Could not read file: " + extraFile.Path)
 		return err
 	}
 
@@ -134,6 +141,7 @@ func replaceVersionBetweenTags(extraFile config.ExtraFileConfig, versions config
 	// Write the modified contents back to the file
 	err = os.WriteFile(extraFile.Path, []byte(modifiedContent), 0644)
 	if err != nil {
+		fmt.Println("Could not write file: " + extraFile.Path)
 		return err
 	}
 

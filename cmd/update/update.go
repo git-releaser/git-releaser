@@ -4,6 +4,7 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package update
 
 import (
+	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -12,6 +13,7 @@ import (
 	"github.com/thschue/git-releaser/pkg/helpers"
 	"github.com/thschue/git-releaser/pkg/manifest"
 	"github.com/thschue/git-releaser/pkg/versioning"
+	"os"
 )
 
 // updateCmd represents the update command
@@ -47,7 +49,9 @@ to quickly create a Cobra application.`,
 
 		conf, err := config.ReadConfig(viper.ConfigFileUsed())
 		if err != nil {
-			fmt.Println("Could not read config file")
+			if !errors.Is(err, os.ErrNotExist) {
+				fmt.Println(err)
+			}
 		}
 
 		if conf.TargetBranch == "" {
