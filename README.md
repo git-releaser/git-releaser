@@ -46,9 +46,8 @@ The most important part of the configuration is the `.git-releaser-manifest.yaml
 
 Please note that the first release will be created based on the version specified in the configuration file. Afterward, the version will be updated automatically.
 
-```yaml
-
-### Generate configuration
+```json
+{"version": "0.1.0"}
 ```
 
 ### GitLab
