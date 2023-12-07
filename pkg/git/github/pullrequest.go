@@ -1,14 +1,12 @@
 package github
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
+	"github.com/google/go-github/v33/github"
 	"github.com/thschue/git-releaser/pkg/changelog"
 	"github.com/thschue/git-releaser/pkg/config"
 	"github.com/thschue/git-releaser/pkg/naming"
-	"io"
-	"net/http"
+	"strings"
 )
 
 type PullRequest struct {
@@ -21,15 +19,15 @@ type PullRequest struct {
 }
 
 func (g Client) CheckCreatePullRequest(source string, target string, versions config.Versions) error {
-	err := g.CreatePullRequest(source, target, versions)
+	err := g.createPullRequest(source, target, versions)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (g Client) CreatePullRequest(source string, target string, versions config.Versions) error {
-	url := fmt.Sprintf("%s/repos/%s/pulls", g.ApiURL, g.Repository)
+func (g Client) createPullRequest(source string, target string, versions config.Versions) error {
+	owner, repo := strings.Split(g.Repository, "/")[0], strings.Split(g.Repository, "/")[1]
 
 	// Check if a pull request with the same source and target branches already exists
 	existingPrNumber, err := g.getExistingPullRequestNumber(source, target)
@@ -44,92 +42,54 @@ func (g Client) CreatePullRequest(source string, target string, versions config.
 	title := naming.GeneratePrTitle(versions.NextVersionSlug)
 	description := naming.CreatePrDescription(versions.NextVersionSlug, cl)
 
-	payload := map[string]interface{}{
-		"title": title,
-		"body":  description,
-		"head":  source,
-		"base":  target,
-	}
-
-	var req *http.Request
-
-	jsonPayload, err := json.Marshal(payload)
-	if err != nil {
-		return err
+	newPR := &github.NewPullRequest{
+		Title: github.String(title),
+		Body:  github.String(description),
+		Head:  github.String(source),
+		Base:  github.String(target),
 	}
 
 	if existingPrNumber != 0 {
 		// If the pull request already exists, update its description
-		url = fmt.Sprintf("%s/repos/%s/pulls/%d", g.ApiURL, g.Repository, existingPrNumber)
-		req, err = http.NewRequest("PATCH", url, bytes.NewBuffer(jsonPayload))
+		existingPr, _, err := g.GHClient.PullRequests.Get(g.Context, owner, repo, existingPrNumber)
 		if err != nil {
 			return err
 		}
-	} else {
-		// If the pull request doesn't exist, create a new one
-		req, err = http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
+		existingPr.Title = newPR.Title
+		existingPr.Body = newPR.Body
+		_, _, err = g.GHClient.PullRequests.Edit(g.Context, owner, repo, existingPrNumber, existingPr)
 		if err != nil {
 			return err
 		}
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+g.AccessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to create/update pull request. Status code: %d, Body: %s", resp.StatusCode, body)
-	}
-
-	if existingPrNumber != 0 {
 		fmt.Println("Pull request updated successfully.")
 	} else {
+		// If the pull request doesn't exist, create a new one
+		_, _, err = g.GHClient.PullRequests.Create(g.Context, owner, repo, newPR)
+		if err != nil {
+			return err
+		}
 		fmt.Println("Pull request created successfully.")
 	}
 
 	return nil
 }
 
-// getExistingPullRequestNumber retrieves the number of an existing pull request with the same source and target branches
 func (g Client) getExistingPullRequestNumber(source, target string) (int, error) {
-	url := fmt.Sprintf("%s/repos/%s/pulls", g.ApiURL, g.Repository)
+	owner, repo := strings.Split(g.Repository, "/")[0], strings.Split(g.Repository, "/")[1]
 
 	// Fetch all pull requests
-	req, err := http.NewRequest("GET", url, nil)
+	opts := &github.PullRequestListOptions{
+		State: "open",
+	}
+	pullRequests, _, err := g.GHClient.PullRequests.List(g.Context, owner, repo, opts)
 	if err != nil {
-		return 0, err
-	}
-	req.Header.Set("Authorization", "Bearer "+g.AccessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return 0, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return 0, fmt.Errorf("failed to fetch pull requests. Status code: %d, Body: %s", resp.StatusCode, body)
-	}
-
-	var pullRequests []PullRequest
-
-	if err := json.NewDecoder(resp.Body).Decode(&pullRequests); err != nil {
 		return 0, err
 	}
 
 	// Find the number of the existing pull request with the same source and target branches
 	for _, pr := range pullRequests {
-		if pr.SourceBranch == source && pr.TargetBranch == target && pr.State == "open" {
-			return pr.Number, nil
+		if pr.GetHead().GetRef() == source && pr.GetBase().GetRef() == target {
+			return pr.GetNumber(), nil
 		}
 	}
 

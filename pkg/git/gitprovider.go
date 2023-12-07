@@ -58,13 +58,13 @@ func NewGitClient(config GitConfig) GitProvider {
 		}
 
 		fmt.Println(config.UserId)
-		return &github.Client{
+		return github.NewClient(github.Client{
 			UserId:      config.UserId,
 			AccessToken: config.AccessToken,
 			ProjectURL:  config.ProjectUrl,
 			Repository:  config.AdditionalConfig["repository"],
 			ApiURL:      config.ApiUrl,
-		}
+		})
 	}
 	return nil
 }

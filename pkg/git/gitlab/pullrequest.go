@@ -20,14 +20,14 @@ type MergeRequest struct {
 }
 
 func (g Client) CheckCreatePullRequest(source string, target string, versions config.Versions) error {
-	err := g.CreatePullRequest(source, target, versions)
+	err := g.createPullRequest(source, target, versions)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (g Client) CreatePullRequest(source string, target string, versions config.Versions) error {
+func (g Client) createPullRequest(source string, target string, versions config.Versions) error {
 	url := fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID)
 
 	// Check if a pull request with the same source and target branches already exists
