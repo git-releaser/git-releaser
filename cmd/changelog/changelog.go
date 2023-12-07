@@ -4,6 +4,7 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package changelog
 
 import (
+	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -11,6 +12,7 @@ import (
 	"github.com/thschue/git-releaser/pkg/config"
 	"github.com/thschue/git-releaser/pkg/git"
 	"github.com/thschue/git-releaser/pkg/helpers"
+	"os"
 )
 
 var ChangeLogCmd = &cobra.Command{
@@ -44,7 +46,9 @@ to quickly create a Cobra application.`,
 
 		conf, err := config.ReadConfig(viper.ConfigFileUsed())
 		if err != nil {
-			fmt.Println("Could not read config file")
+			if !errors.Is(err, os.ErrNotExist) {
+				fmt.Println(err)
+			}
 		}
 
 		if conf.TargetBranch == "" {
