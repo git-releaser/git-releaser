@@ -19,16 +19,16 @@ func GetNextVersion(version config.VersioningConfig) (semver.Version, bool) {
 
 	repository, err := gogit.PlainOpen(rootRepositoryFlag)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Could not open repository: " + err.Error())
 	}
 
 	result, err := git.GetConventionalCommitTypesSinceLastRelease(repository)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Could not get conventional commits since last release: " + err.Error())
 	} else {
 		currentVersion, err := manifest.GetCurrentVersion()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("Could not get next version: " + err.Error())
 		}
 		nextVersion, hasNextVersion = calculateNextVersion(version, currentVersion, result.ConventionalCommitTypes)
 	}

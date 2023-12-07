@@ -54,13 +54,15 @@ to quickly create a Cobra application.`,
 			}
 		}
 
-		fmt.Println(g)
-
 		if conf.TargetBranch == "" {
 			conf.TargetBranch = "main"
 		}
 
-		versions.CurrentVersion, _ = manifest.GetCurrentVersion()
+		versions.CurrentVersion, err = manifest.GetCurrentVersion()
+		if err != nil {
+			fmt.Println("Could not get current version: " + err.Error())
+		}
+
 		versions.NextVersion, versions.NewVersion = versioning.GetNextVersion(conf.Versioning)
 		versions.VersionPrefix = conf.Versioning.VersionPrefix
 		versions.CurrentVersionSlug = versions.VersionPrefix + versions.CurrentVersion.String()
