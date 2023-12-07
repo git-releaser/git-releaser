@@ -3,12 +3,13 @@ package manifest
 import (
 	"encoding/json"
 	"github.com/Masterminds/semver"
+	"github.com/thschue/git-releaser/pkg/naming"
 	"io"
 	"os"
 )
 
 func GetCurrentVersion() (*semver.Version, error) {
-	jsonFile, err := os.Open(".git-releaser-manifest.json")
+	jsonFile, err := os.Open(naming.DefaultManifestFileName)
 	// if we os.Open returns an error then handle it
 	if err != nil {
 		return nil, err

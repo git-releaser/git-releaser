@@ -33,7 +33,7 @@ func GetNextVersion(version config.VersioningConfig) (semver.Version, bool) {
 		nextVersion, hasNextVersion = calculateNextVersion(version, currentVersion, result.ConventionalCommitTypes)
 	}
 
-	fmt.Println("Next version: ", nextVersion)
+	fmt.Println("Next version: ", nextVersion.String())
 
 	return nextVersion, hasNextVersion
 }
