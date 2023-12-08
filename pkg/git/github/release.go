@@ -1,22 +1,28 @@
 package github
 
 import (
-	"context"
 	"fmt"
+	"github.com/Masterminds/semver"
 	"github.com/google/go-github/v33/github"
+	"github.com/thschue/git-releaser/pkg/changelog"
 	"github.com/thschue/git-releaser/pkg/config"
-	"golang.org/x/oauth2"
+	"github.com/thschue/git-releaser/pkg/naming"
+	"sort"
 	"strings"
 )
 
 func (g Client) CreateRelease(baseBranch string, version config.Versions, description string) error {
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: g.AccessToken},
-	)
-	tc := oauth2.NewClient(ctx, ts)
+	highestRelease, err := g.GetHighestRelease()
+	if err != nil {
+		fmt.Println("github: could not get highest release")
+	}
+	commits, _ := g.GetCommitsSinceRelease(version.VersionPrefix + highestRelease)
+	conventionalCommits := changelog.ParseConventionalCommits(commits)
+	cl := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
-	client := github.NewClient(tc)
+	if description == "" {
+		description = naming.CreateReleaseDescription(version.CurrentVersionSlug, cl)
+	}
 
 	release := &github.RepositoryRelease{
 		TagName:         github.String(version.CurrentVersionSlug),
@@ -26,7 +32,7 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 	}
 
 	owner, repo := parseOwnerRepoFromURL(g.ProjectURL)
-	_, _, err := client.Repositories.CreateRelease(ctx, owner, repo, release)
+	_, _, err = g.GHClient.Repositories.CreateRelease(g.Context, owner, repo, release)
 	if err != nil {
 		return err
 	}
@@ -56,4 +62,36 @@ func (g Client) CheckRelease(version config.Versions) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func (g Client) GetHighestRelease() (string, error) {
+	var org string
+	var repo string
+
+	if len(strings.Split(g.Repository, "/")) == 2 {
+		org = strings.Split(g.Repository, "/")[0]
+		repo = strings.Split(g.Repository, "/")[1]
+	}
+
+	releases, _, err := g.GHClient.Repositories.ListReleases(g.Context, org, repo, nil)
+	if err != nil {
+		return "", err
+	}
+
+	if len(releases) == 0 {
+		return "0.0.0", nil
+	}
+
+	versions := make([]*semver.Version, len(releases))
+	for i, release := range releases {
+		version, err := semver.NewVersion(release.GetTagName())
+		if err != nil {
+			continue // Ignore invalid versions
+		}
+		versions[i] = version
+	}
+
+	sort.Sort(semver.Collection(versions))
+
+	return versions[len(versions)-1].String(), nil
 }

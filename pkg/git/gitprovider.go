@@ -25,8 +25,8 @@ type GitProvider interface {
 	CommitManifest(branchName string, content string, versions config.Versions, extraFiles []config.ExtraFileConfig) error
 	CreateRelease(baseBranch string, version config.Versions, description string) error
 	CheckRelease(versions config.Versions) (bool, error)
-
 	GetCommitsSinceRelease(version string) ([]changelog.Commit, error)
+	GetHighestRelease() (string, error)
 }
 
 func NewGitClient(config GitConfig) GitProvider {

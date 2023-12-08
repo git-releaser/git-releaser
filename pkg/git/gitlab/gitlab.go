@@ -7,3 +7,7 @@ type Client struct {
 	ProjectID   int
 	ProjectURL  string
 }
+
+func (g Client) GetHighestRelease() (string, error) {
+	return "", nil
+}
