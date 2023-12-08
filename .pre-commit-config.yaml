@@ -22,3 +22,10 @@ repos:
    hooks:
    - id: golangci-lint-full
      args: [--timeout=5m]
+
+- repo: https://github.com/tekwizely/pre-commit-golang
+  rev: master
+  hooks:
+  - id: go-mod-tidy
+  - id: go-test-repo-mod
+  - id: go-fmt
