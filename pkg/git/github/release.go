@@ -16,12 +16,12 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 	if err != nil {
 		fmt.Println("github: could not get highest release")
 	}
-	commits, _ := g.GetCommitsSinceRelease(highestRelease)
+	commits, _ := g.GetCommitsSinceRelease(version.VersionPrefix + highestRelease)
 	conventionalCommits := changelog.ParseConventionalCommits(commits)
 	cl := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
 	if description == "" {
-		description = naming.CreatePrDescription(version.CurrentVersionSlug, cl)
+		description = naming.CreateReleaseDescription(version.CurrentVersionSlug, cl)
 	}
 
 	release := &github.RepositoryRelease{
