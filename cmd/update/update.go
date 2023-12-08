@@ -74,7 +74,7 @@ to quickly create a Cobra application.`,
 
 		if !releaseExists {
 			fmt.Println("Running release for version " + versions.CurrentVersionSlug)
-			err = g.CreateRelease(conf.TargetBranch, versions, "New Release")
+			err = g.CreateRelease(conf.TargetBranch, versions, "")
 			if err != nil {
 				fmt.Println(err)
 			}

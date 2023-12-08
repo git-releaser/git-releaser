@@ -55,7 +55,17 @@ to quickly create a Cobra application.`,
 			conf.TargetBranch = "main"
 		}
 
-		commits, err := g.GetCommitsSinceRelease(viper.GetString("since_version"))
+		sinceVersion := viper.GetString("since_version")
+
+		if sinceVersion == "" {
+			sinceVersion, err = g.GetHighestRelease()
+			fmt.Println("sinceVersion: " + conf.Versioning.VersionPrefix + sinceVersion)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+
+		commits, err := g.GetCommitsSinceRelease(conf.Versioning.VersionPrefix + sinceVersion)
 		if err != nil {
 			fmt.Println(err)
 		}
