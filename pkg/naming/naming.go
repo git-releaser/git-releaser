@@ -6,7 +6,8 @@ import (
 
 const EnvPrefix = "GIT_RELEASER"
 const DefaultConfigFileName = ".git-releaser-config"
-const DefaultManifestFileName = ".git-releaser-manifest.json"
+
+var DefaultManifestFileName = ".git-releaser-manifest.json"
 
 func GeneratePrTitle(version string) string {
 	title := fmt.Sprintf("Release %s", version)
