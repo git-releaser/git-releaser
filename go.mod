@@ -4,7 +4,7 @@ go 1.21.5
 
 require (
 	github.com/Masterminds/semver v1.5.0
-	github.com/go-git/go-git/v5 v5.10.1
+	github.com/go-git/go-git/v5 v5.11.0
 	github.com/google/go-github/v33 v33.0.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
