@@ -16,7 +16,7 @@ import (
 	"os"
 )
 
-// updateCmd represents the update command
+// UpdateCmd represents the update command
 var UpdateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "A brief description of your command",
