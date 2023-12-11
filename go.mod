@@ -9,7 +9,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.1
-	github.com/thenativeweb/get-next-version v0.0.0-20231106045438-c8f27215fbac
+	github.com/thenativeweb/get-next-version v0.0.0-20231211051202-93a31583f9c0
 	golang.org/x/oauth2 v0.15.0
 	gopkg.in/yaml.v3 v3.0.1
 )
