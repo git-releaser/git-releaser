@@ -16,3 +16,29 @@ func TestCreatePrDescription(t *testing.T) {
 		t.Errorf("Unexpected result: got %v, want %v", result, expected)
 	}
 }
+
+func TestGeneratePrTitle(t *testing.T) {
+	type args struct {
+		version string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "Test GeneratePrTitle",
+			args: args{
+				version: "0.0.1",
+			},
+			want: "Release 0.0.1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GeneratePrTitle(tt.args.version); got != tt.want {
+				t.Errorf("GeneratePrTitle() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
