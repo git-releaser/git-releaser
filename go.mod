@@ -1,6 +1,6 @@
 module github.com/thschue/git-releaser
 
-go 1.21.5
+go 1.22.0
 
 require (
 	github.com/Masterminds/semver v1.5.0
