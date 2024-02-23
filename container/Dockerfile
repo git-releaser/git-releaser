@@ -32,7 +32,7 @@ LABEL org.opencontainers.image.source="https://github.com/git-releaser/git-relea
     org.opencontainers.image.vendor='The git-releaser Authors' \
     org.opencontainers.image.licenses='Apache-2.0'
 
-RUN apk add --no-cache git
+RUN apk add --no-cache git ca-certificates
 
 WORKDIR /
 COPY --from=builder /workspace/git-releaser .
