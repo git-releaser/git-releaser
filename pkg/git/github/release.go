@@ -16,18 +16,18 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 	if err != nil {
 		fmt.Println("github: could not get highest release")
 	}
-	commits, _ := g.GetCommitsSinceRelease(version.VersionPrefix + highestRelease)
+	commits, _ := g.GetCommitsSinceRelease(highestRelease)
 	conventionalCommits := changelog.ParseConventionalCommits(commits)
 	cl := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
 	if description == "" {
-		description = naming.CreateReleaseDescription(version.CurrentVersionSlug, cl)
+		description = naming.CreateReleaseDescription(version.CurrentVersion.Original(), cl)
 	}
 
 	release := &github.RepositoryRelease{
-		TagName:         github.String(version.CurrentVersionSlug),
+		TagName:         github.String(version.CurrentVersion.Original()),
 		TargetCommitish: github.String(baseBranch),
-		Name:            github.String("Release " + version.CurrentVersionSlug),
+		Name:            github.String("Release " + version.CurrentVersion.Original()),
 		Body:            github.String(description),
 	}
 
@@ -56,7 +56,7 @@ func (g Client) CheckRelease(version config.Versions) (bool, error) {
 
 	// Check if the desired tag is in the list
 	for _, tag := range tags {
-		if *tag.Name == version.CurrentVersionSlug {
+		if *tag.Name == version.CurrentVersion.Original() {
 			return true, nil
 		}
 	}

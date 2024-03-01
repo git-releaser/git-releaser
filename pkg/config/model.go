@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/Masterminds/semver"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"gopkg.in/yaml.v3"
 	"os"
 )
@@ -20,9 +21,17 @@ type Config struct {
 }
 
 type VersioningConfig struct {
-	VersionPrefix          string `yaml:"version_prefix,omitempty"`
-	BumpMinorPreMajor      bool   `yaml:"bump_minor_pre_major"`
-	BumpPatchMinorPreMajor bool   `yaml:"bump_patch_minor_pre_major"`
+	VersionPrefix          string            `yaml:"version_prefix,omitempty"`
+	BumpMinorPreMajor      bool              `yaml:"bump_minor_pre_major"`
+	BumpPatchMinorPreMajor bool              `yaml:"bump_patch_minor_pre_major"`
+	Strategy               string            `yaml:"strategy"`
+	SimpleCommitTypes      SimpleCommitTypes `yaml:"simple_commit_types,omitempty"`
+}
+
+type SimpleCommitTypes struct {
+	Patch []string `yaml:"patch"`
+	Minor []string `yaml:"minor"`
+	Major []string `yaml:"major"`
 }
 
 type ExtraFileConfig struct {
@@ -31,12 +40,11 @@ type ExtraFileConfig struct {
 }
 
 type Versions struct {
-	CurrentVersion     *semver.Version `yaml:"current_version"`
-	NextVersion        semver.Version  `yaml:"next_version"`
-	VersionPrefix      string          `yaml:"version_prefix"`
-	NewVersion         bool            `yaml:"new_version"`
-	CurrentVersionSlug string          `yaml:"current_version_slug"`
-	NextVersionSlug    string          `yaml:"next_version_slug"`
+	CurrentVersion semver.Version
+	Commits        []object.Commit
+	Config         VersioningConfig
+	NextVersion    semver.Version
+	HasNextVersion bool
 }
 
 func ReadConfig(filename string) (Config, error) {

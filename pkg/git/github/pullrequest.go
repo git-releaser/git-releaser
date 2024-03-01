@@ -35,12 +35,12 @@ func (g Client) createPullRequest(source string, target string, versions config.
 		return err
 	}
 
-	commits, _ := g.GetCommitsSinceRelease(versions.CurrentVersionSlug)
+	commits, _ := g.GetCommitsSinceRelease(versions.CurrentVersion.Original())
 	conventionalCommits := changelog.ParseConventionalCommits(commits)
 	cl := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
-	title := naming.GeneratePrTitle(versions.NextVersionSlug)
-	description := naming.CreatePrDescription(versions.NextVersionSlug, cl)
+	title := naming.GeneratePrTitle(versions.NextVersion.Original())
+	description := naming.CreatePrDescription(versions.NextVersion.Original(), cl)
 
 	newPR := &github.NewPullRequest{
 		Title: github.String(title),

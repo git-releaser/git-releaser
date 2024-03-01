@@ -60,7 +60,7 @@ func CommitManifest(branchName string, userid string, token string, content stri
 	}
 
 	// Commit the changes
-	commit, err := worktree.Commit("releaser: update files for version "+versions.NextVersionSlug, &git.CommitOptions{
+	commit, err := worktree.Commit("releaser: update files for version "+versions.NextVersion.Original(), &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "git-releaser",
 			Email: "no-reply@git-releaser.com",

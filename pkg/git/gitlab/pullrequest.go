@@ -36,12 +36,12 @@ func (g Client) createPullRequest(source string, target string, versions config.
 		return err
 	}
 
-	commits, _ := g.GetCommitsSinceRelease(versions.CurrentVersionSlug)
+	commits, _ := g.GetCommitsSinceRelease(versions.CurrentVersion.Original())
 	conventionalCommits := changelog.ParseConventionalCommits(commits)
 	changelog := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
-	title := naming.GeneratePrTitle(versions.NextVersionSlug)
-	description := naming.CreatePrDescription(versions.NextVersionSlug, changelog)
+	title := naming.GeneratePrTitle(versions.NextVersion.Original())
+	description := naming.CreatePrDescription(versions.NextVersion.Original(), changelog)
 
 	payload := map[string]interface{}{
 		"source_branch": source,
