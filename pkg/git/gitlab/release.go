@@ -42,6 +42,14 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
 
+	if g.DryRun {
+		fmt.Println("Dry run: would create release with the following data:")
+		fmt.Printf("Tag name: %s\n", version.CurrentVersion.Original())
+		fmt.Printf("Ref: %s\n", baseBranch)
+		fmt.Printf("Description: %s\n", description)
+		return nil
+	}
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {

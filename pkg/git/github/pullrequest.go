@@ -57,6 +57,11 @@ func (g Client) createPullRequest(source string, target string, versions config.
 		}
 		existingPr.Title = newPR.Title
 		existingPr.Body = newPR.Body
+
+		if g.DryRun {
+			fmt.Println("Pull request already exists, would update it")
+			return nil
+		}
 		_, _, err = g.GHClient.PullRequests.Edit(g.Context, owner, repo, existingPrNumber, existingPr)
 		if err != nil {
 			return err
@@ -64,6 +69,15 @@ func (g Client) createPullRequest(source string, target string, versions config.
 		fmt.Println("Pull request updated successfully.")
 	} else {
 		// If the pull request doesn't exist, create a new one
+		if g.DryRun {
+			fmt.Println("Dry run: pull request would be created with the following details:")
+			fmt.Println("Title: " + title)
+			fmt.Println("Description: " + description)
+			fmt.Println("Source branch: " + source)
+			fmt.Println("Target branch: " + target)
+			return nil
+		}
+
 		_, response, err := g.GHClient.PullRequests.Create(g.Context, owner, repo, newPR)
 		if err != nil {
 			if response.StatusCode == 403 {

@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-func CommitManifest(branchName string, userid string, token string, content string, versions config.Versions, extraFiles []config.ExtraFileConfig) error {
+func CommitManifest(branchName string, userid string, token string, content string, versions config.Versions, extraFiles []config.ExtraFileConfig, dryRun bool) error {
 	filePath := ".git-releaser-manifest.json"
 
 	repository, err := git.PlainOpen(".")
@@ -59,6 +59,10 @@ func CommitManifest(branchName string, userid string, token string, content stri
 		}
 	}
 
+	if dryRun {
+		fmt.Println("Dry run: would commit and push changes")
+		return nil
+	}
 	// Commit the changes
 	commit, err := worktree.Commit("releaser: update files for version "+versions.NextVersion.Original(), &git.CommitOptions{
 		Author: &object.Signature{

@@ -36,6 +36,8 @@ to quickly create a Cobra application.`,
 			additionalConfig["projectId"] = fmt.Sprintf("%d", viper.GetInt("project_id"))
 		}
 
+		fmt.Println(viper.GetString("project_url"))
+
 		g := git.NewGitClient(git.GitConfig{
 			Provider:         viper.GetString("provider"),
 			AccessToken:      viper.GetString("token"),
@@ -43,6 +45,7 @@ to quickly create a Cobra application.`,
 			ProjectUrl:       viper.GetString("project_url"),
 			ApiUrl:           viper.GetString("api_url"),
 			AdditionalConfig: additionalConfig,
+			DryRun:           viper.GetBool("dry-run"),
 		})
 
 		conf, err := config.ReadConfig(viper.ConfigFileUsed())
@@ -71,7 +74,7 @@ to quickly create a Cobra application.`,
 		}
 
 		if !releaseExists {
-			fmt.Println("Running release for version " + versions.NextVersion.Original())
+			fmt.Println("Running release for version " + versions.CurrentVersion.Original())
 			err = g.CreateRelease(conf.TargetBranch, versions, "")
 			if err != nil {
 				fmt.Println(err)
@@ -111,5 +114,6 @@ func init() {
 	UpdateCmd.Flags().StringP("provider", "g", "github", "Git Provider")
 	UpdateCmd.Flags().StringP("repository", "r", viper.GetString("repository"), "Repository when using GitHub")
 	UpdateCmd.Flags().StringP("target_branch", "b", viper.GetString("target_branch"), "Target Branch (Default: main)")
+	UpdateCmd.Flags().BoolP("dry-run", "d", viper.GetBool("dry-run"), "Dry-Run")
 	helpers.BindViperFlags(UpdateCmd, viper.GetViper())
 }

@@ -83,7 +83,7 @@ func (v *Version) calculateNextVersion(conventionalCommitTypes []conventionalcom
 		return v.CurrentVersion.IncPatch(), true
 	case conventionalcommits.Feature:
 		if v.Config.BumpMinorPreMajor {
-			return v.CurrentVersion.IncMinor(), true
+			return v.CurrentVersion.IncPatch(), true
 		}
 		return v.CurrentVersion.IncMinor(), true
 	case conventionalcommits.BreakingChange:

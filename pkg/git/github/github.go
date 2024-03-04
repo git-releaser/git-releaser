@@ -14,6 +14,7 @@ type Client struct {
 	Repository  string
 	ApiURL      string
 	GHClient    *github.Client
+	DryRun      bool
 }
 
 func NewClient(client Client) Client {

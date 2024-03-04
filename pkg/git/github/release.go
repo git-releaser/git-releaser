@@ -32,6 +32,16 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 	}
 
 	owner, repo := parseOwnerRepoFromURL(g.ProjectURL)
+
+	if g.DryRun {
+		fmt.Println("Dry run: would create release with the following data:")
+		fmt.Printf("Tag name: %s\n", *release.TagName)
+		fmt.Printf("Target commitish: %s\n", *release.TargetCommitish)
+		fmt.Printf("Name: %s\n", *release.Name)
+		fmt.Printf("Body: %s\n", *release.Body)
+		return nil
+	}
+
 	_, _, err = g.GHClient.Repositories.CreateRelease(g.Context, owner, repo, release)
 	if err != nil {
 		return err
@@ -44,6 +54,7 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 func parseOwnerRepoFromURL(url string) (string, string) {
 	// Assuming URL is of the form "https://github.com/owner/repo"
 	parts := strings.Split(url, "/")
+	fmt.Println(url)
 	return parts[len(parts)-2], parts[len(parts)-1]
 }
 

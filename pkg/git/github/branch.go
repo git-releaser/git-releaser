@@ -47,6 +47,11 @@ func (g Client) createBranch(baseBranch string, branchName string) error {
 	}
 	baseSha := baseRef.GetObject().GetSHA()
 
+	if g.DryRun {
+		fmt.Printf("Dry run: Branch '%s' would be created.\n", branchName)
+		return nil
+	}
+
 	// Create a new reference for the new branch
 	ref := &github.Reference{
 		Ref: github.String("refs/heads/" + branchName),

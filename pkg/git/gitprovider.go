@@ -18,6 +18,7 @@ type GitConfig struct {
 	ProjectUrl       string
 	ApiUrl           string
 	AdditionalConfig map[string]string
+	DryRun           bool
 }
 type GitProvider interface {
 	CheckCreateBranch(baseBranch string, targetVersion string) (string, error)
@@ -50,6 +51,7 @@ func NewGitClient(config GitConfig) GitProvider {
 			ApiURL:      config.ApiUrl,
 			ProjectID:   projectID,
 			ProjectURL:  config.ProjectUrl,
+			DryRun:      config.DryRun,
 		}
 
 	case "github":
@@ -64,6 +66,7 @@ func NewGitClient(config GitConfig) GitProvider {
 			ProjectURL:  config.ProjectUrl,
 			Repository:  config.AdditionalConfig["repository"],
 			ApiURL:      config.ApiUrl,
+			DryRun:      config.DryRun,
 		})
 	}
 	return nil

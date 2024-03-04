@@ -1,3 +1,4 @@
 versioning:
   bump_minor_pre_major: true
   bump_patch_minor_pre_major: true
+  strategy: conventional

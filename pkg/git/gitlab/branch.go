@@ -70,6 +70,11 @@ func (g Client) createBranch(baseBranch string, branchName string) error {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
 
+	if g.DryRun {
+		fmt.Printf("Dry run: Branch '%s' would be created.\n", branchName)
+		return nil
+	}
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
