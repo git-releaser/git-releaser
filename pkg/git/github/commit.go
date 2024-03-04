@@ -12,7 +12,7 @@ import (
 )
 
 func (g Client) CommitManifest(branchName string, content string, versions releaserconfig.Versions, extraFiles []releaserconfig.ExtraFileConfig) error {
-	err := file.CommitManifest(branchName, g.UserId, g.AccessToken, content, versions, extraFiles)
+	err := file.CommitManifest(branchName, g.UserId, g.AccessToken, content, versions, extraFiles, g.DryRun)
 	return err
 }
 

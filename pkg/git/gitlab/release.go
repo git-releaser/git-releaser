@@ -24,7 +24,7 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 	url := fmt.Sprintf("%s/projects/%d/releases", g.ApiURL, g.ProjectID)
 
 	payload := map[string]interface{}{
-		"tag_name":    version.CurrentVersionSlug,
+		"tag_name":    version.CurrentVersion.Original(),
 		"ref":         baseBranch,
 		"description": description,
 	}
@@ -41,6 +41,14 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
+
+	if g.DryRun {
+		fmt.Println("Dry run: would create release with the following data:")
+		fmt.Printf("Tag name: %s\n", version.CurrentVersion.Original())
+		fmt.Printf("Ref: %s\n", baseBranch)
+		fmt.Printf("Description: %s\n", description)
+		return nil
+	}
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -85,7 +93,7 @@ func (g Client) CheckRelease(version config.Versions) (bool, error) {
 
 	// Check if the desired tag is in the list
 	for _, tag := range tags {
-		if tag.Name == version.CurrentVersionSlug {
+		if tag.Name == version.CurrentVersion.Original() {
 			return true, nil
 		}
 	}

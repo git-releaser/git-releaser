@@ -35,12 +35,12 @@ func (g Client) createPullRequest(source string, target string, versions config.
 		return err
 	}
 
-	commits, _ := g.GetCommitsSinceRelease(versions.CurrentVersionSlug)
+	commits, _ := g.GetCommitsSinceRelease(versions.CurrentVersion.Original())
 	conventionalCommits := changelog.ParseConventionalCommits(commits)
 	cl := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
-	title := naming.GeneratePrTitle(versions.NextVersionSlug)
-	description := naming.CreatePrDescription(versions.NextVersionSlug, cl)
+	title := naming.GeneratePrTitle(versions.NextVersion.Original())
+	description := naming.CreatePrDescription(versions.NextVersion.Original(), cl)
 
 	newPR := &github.NewPullRequest{
 		Title: github.String(title),
@@ -57,6 +57,11 @@ func (g Client) createPullRequest(source string, target string, versions config.
 		}
 		existingPr.Title = newPR.Title
 		existingPr.Body = newPR.Body
+
+		if g.DryRun {
+			fmt.Println("Pull request already exists, would update it")
+			return nil
+		}
 		_, _, err = g.GHClient.PullRequests.Edit(g.Context, owner, repo, existingPrNumber, existingPr)
 		if err != nil {
 			return err
@@ -64,6 +69,15 @@ func (g Client) createPullRequest(source string, target string, versions config.
 		fmt.Println("Pull request updated successfully.")
 	} else {
 		// If the pull request doesn't exist, create a new one
+		if g.DryRun {
+			fmt.Println("Dry run: pull request would be created with the following details:")
+			fmt.Println("Title: " + title)
+			fmt.Println("Description: " + description)
+			fmt.Println("Source branch: " + source)
+			fmt.Println("Target branch: " + target)
+			return nil
+		}
+
 		_, response, err := g.GHClient.PullRequests.Create(g.Context, owner, repo, newPR)
 		if err != nil {
 			if response.StatusCode == 403 {

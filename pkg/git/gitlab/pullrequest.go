@@ -36,12 +36,12 @@ func (g Client) createPullRequest(source string, target string, versions config.
 		return err
 	}
 
-	commits, _ := g.GetCommitsSinceRelease(versions.CurrentVersionSlug)
+	commits, _ := g.GetCommitsSinceRelease(versions.CurrentVersion.Original())
 	conventionalCommits := changelog.ParseConventionalCommits(commits)
 	changelog := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
-	title := naming.GeneratePrTitle(versions.NextVersionSlug)
-	description := naming.CreatePrDescription(versions.NextVersionSlug, changelog)
+	title := naming.GeneratePrTitle(versions.NextVersion.Original())
+	description := naming.CreatePrDescription(versions.NextVersion.Original(), changelog)
 
 	payload := map[string]interface{}{
 		"source_branch": source,
@@ -60,6 +60,7 @@ func (g Client) createPullRequest(source string, target string, versions config.
 	if existingPrID != 0 {
 		// If the pull request already exists, update its description
 		url = fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, existingPrID)
+
 		req, err = http.NewRequest("PUT", url, bytes.NewBuffer(jsonPayload))
 		if err != nil {
 			return err
@@ -74,6 +75,15 @@ func (g Client) createPullRequest(source string, target string, versions config.
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
+
+	if g.DryRun {
+		fmt.Println("Dry run: pull request would be created with the following details:")
+		fmt.Println("Title: " + title)
+		fmt.Println("Description: " + description)
+		fmt.Println("Source branch: " + source)
+		fmt.Println("Target branch: " + target)
+		return nil
+	}
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

@@ -11,7 +11,6 @@ import (
 	"github.com/thschue/git-releaser/pkg/config"
 	"github.com/thschue/git-releaser/pkg/git"
 	"github.com/thschue/git-releaser/pkg/helpers"
-	"github.com/thschue/git-releaser/pkg/manifest"
 	"github.com/thschue/git-releaser/pkg/versioning"
 	"os"
 )
@@ -27,7 +26,6 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		var versions config.Versions
 		additionalConfig := make(map[string]string)
 
 		if viper.GetString("repository") != "" {
@@ -38,6 +36,8 @@ to quickly create a Cobra application.`,
 			additionalConfig["projectId"] = fmt.Sprintf("%d", viper.GetInt("project_id"))
 		}
 
+		fmt.Println(viper.GetString("project_url"))
+
 		g := git.NewGitClient(git.GitConfig{
 			Provider:         viper.GetString("provider"),
 			AccessToken:      viper.GetString("token"),
@@ -45,6 +45,7 @@ to quickly create a Cobra application.`,
 			ProjectUrl:       viper.GetString("project_url"),
 			ApiUrl:           viper.GetString("api_url"),
 			AdditionalConfig: additionalConfig,
+			DryRun:           viper.GetBool("dry-run"),
 		})
 
 		conf, err := config.ReadConfig(viper.ConfigFileUsed())
@@ -58,22 +59,22 @@ to quickly create a Cobra application.`,
 			conf.TargetBranch = "main"
 		}
 
-		versions.CurrentVersion, err = manifest.GetCurrentVersion()
+		v := versioning.NewVersion(conf.Versioning)
+
+		err = v.SetNextVersion()
 		if err != nil {
-			fmt.Println("Could not get current version: " + err.Error())
+			fmt.Println(err)
 		}
 
-		versions.NextVersion, versions.NewVersion = versioning.GetNextVersion(conf.Versioning)
-		versions.VersionPrefix = conf.Versioning.VersionPrefix
-		versions.CurrentVersionSlug = versions.VersionPrefix + versions.CurrentVersion.String()
-		versions.NextVersionSlug = versions.VersionPrefix + versions.NextVersion.String()
+		versions := v.GetVersions()
+
 		releaseExists, err := g.CheckRelease(versions)
 		if err != nil {
 			fmt.Println("Could not check for Release: " + err.Error())
 		}
 
 		if !releaseExists {
-			fmt.Println("Running release for version " + versions.CurrentVersionSlug)
+			fmt.Println("Running release for version " + versions.CurrentVersion.Original())
 			err = g.CreateRelease(conf.TargetBranch, versions, "")
 			if err != nil {
 				fmt.Println(err)
@@ -81,17 +82,17 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		if !versions.NewVersion {
+		if !versions.HasNextVersion {
 			fmt.Println("No new version will be created")
 			return
 		}
 
-		branch, err := g.CheckCreateBranch(conf.TargetBranch, versions.NextVersionSlug)
+		branch, err := g.CheckCreateBranch(conf.TargetBranch, versions.NextVersion.Original())
 		if err != nil {
 			fmt.Println("Could not check for Branch: " + err.Error())
 		}
 
-		content := fmt.Sprintf(`{"version": "%s"}`, versions.NextVersion.String())
+		content := fmt.Sprintf(`{"version": "%s"}`, versions.NextVersion.Original())
 		err = g.CommitManifest(branch, content, versions, conf.ExtraFiles)
 		if err != nil {
 			fmt.Println("Could not update the Repository: " + err.Error())
@@ -113,5 +114,6 @@ func init() {
 	UpdateCmd.Flags().StringP("provider", "g", "github", "Git Provider")
 	UpdateCmd.Flags().StringP("repository", "r", viper.GetString("repository"), "Repository when using GitHub")
 	UpdateCmd.Flags().StringP("target_branch", "b", viper.GetString("target_branch"), "Target Branch (Default: main)")
+	UpdateCmd.Flags().BoolP("dry-run", "d", viper.GetBool("dry-run"), "Dry-Run")
 	helpers.BindViperFlags(UpdateCmd, viper.GetViper())
 }

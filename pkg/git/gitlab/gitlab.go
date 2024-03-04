@@ -6,6 +6,7 @@ type Client struct {
 	ApiURL      string
 	ProjectID   int
 	ProjectURL  string
+	DryRun      bool
 }
 
 func (g Client) GetHighestRelease() (string, error) {
