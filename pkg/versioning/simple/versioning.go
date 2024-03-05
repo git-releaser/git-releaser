@@ -62,6 +62,9 @@ func (v *Version) calculateNextVersion(changeTypes []ChangeType) (semver.Version
 		fmt.Println(currentlyDetectedChange)
 		return v.CurrentVersion.IncMajor(), true
 	default:
+		if v.Versions.Config.SimpleCommitTypes.DefaultPatch {
+			return v.CurrentVersion.IncPatch(), true
+		}
 		return v.CurrentVersion, false
 	}
 }
@@ -86,6 +89,7 @@ func (v *Version) getChangeTypes() []ChangeType {
 				changeTypes = append(changeTypes, Patch)
 			}
 		}
+		changeTypes = append(changeTypes, None)
 	}
 	return changeTypes
 }
