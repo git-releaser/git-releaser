@@ -24,6 +24,7 @@ func (g Client) CheckCreatePullRequest(source string, target string, versions co
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -48,6 +49,7 @@ func (g Client) createPullRequest(source string, target string, versions config.
 		"target_branch": target,
 		"title":         title,
 		"description":   description,
+		"labels":        []string{"release"},
 	}
 
 	var req *http.Request
