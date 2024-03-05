@@ -22,7 +22,7 @@ func NewVersion(cfg config.VersioningConfig) IVersion {
 		panic(err)
 	}
 
-	history := common.GetGitHistory("", currentVersion.Original())
+	history, _ := common.GetGitHistory("", currentVersion.Original())
 
 	switch cfg.Strategy {
 	case "conventional":

@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func GetGitHistory(path string, tag string) []object.Commit {
+func GetGitHistory(path string, tag string) ([]object.Commit, error) {
 	r, err := git.PlainOpen(path)
 	if err != nil {
 		log.Fatal(err)
@@ -16,19 +16,19 @@ func GetGitHistory(path string, tag string) []object.Commit {
 	// Get the tag reference
 	ref, err := r.Tag(tag)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	// Resolve the tag to a commit
 	commit, err := r.CommitObject(ref.Hash())
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	// Get the commit history
 	iter, err := r.Log(&git.LogOptions{})
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	var commits []object.Commit
@@ -47,8 +47,8 @@ func GetGitHistory(path string, tag string) []object.Commit {
 		return nil
 	})
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return commits
+	return commits, err
 }
