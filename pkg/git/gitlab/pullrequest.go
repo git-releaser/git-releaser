@@ -12,15 +12,23 @@ import (
 )
 
 type MergeRequest struct {
-	ID           int    `json:"id"`
-	IID          int    `json:"iid"`
-	SourceBranch string `json:"source_branch"`
-	TargetBranch string `json:"target_branch"`
-	Title        string `json:"title"`
+	ID           int      `json:"id"`
+	IID          int      `json:"iid"`
+	SourceBranch string   `json:"source_branch"`
+	TargetBranch string   `json:"target_branch"`
+	Title        string   `json:"title"`
+	Labels       []string `json:"labels"`
+	State        string   `json:"state"`
 }
 
 func (g Client) CheckCreatePullRequest(source string, target string, versions config.Versions) error {
 	err := g.createPullRequest(source, target, versions)
+	if err != nil {
+		return err
+	}
+
+	// Check if other git-releaser pull requests exist and close them
+	err = g.closeOldPullRequests(source)
 	if err != nil {
 		return err
 	}
@@ -155,4 +163,90 @@ func (g Client) getExistingPullRequestID(source, target string) (int, error) {
 	}
 
 	return 0, nil // No existing pull request found
+}
+
+func (g Client) closeOldPullRequests(currentSource string) error {
+	url := fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID)
+
+	// Fetch all merge requests
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to fetch merge requests. Status code: %d, Body: %s", resp.StatusCode, body)
+	}
+
+	var mergeRequests []MergeRequest
+
+	if err := json.NewDecoder(resp.Body).Decode(&mergeRequests); err != nil {
+		return err
+	}
+
+	for _, mr := range mergeRequests {
+		// Check if the merge request is open and has a "release" label
+		if mr.State == "opened" && contains(mr.Labels, "release") && mr.SourceBranch != currentSource {
+			// Close the merge request
+			err := g.closeMergeRequest(mr.ID)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (g Client) closeMergeRequest(id int) error {
+	url := fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, id)
+
+	payload := map[string]interface{}{
+		"state_event": "close",
+	}
+
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to close merge request. Status code: %d, Body: %s", resp.StatusCode, body)
+	}
+
+	return nil
+}
+
+func contains(slice []string, item string) bool {
+	for _, a := range slice {
+		if a == item {
+			return true
+		}
+	}
+	return false
 }
