@@ -36,9 +36,9 @@ func (g Client) GetCommitsSinceRelease(sinceRelease string) ([]changelog.Commit,
 	}
 
 	if tagDate == "" {
-		giturl = fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/commits", g.ProjectID)
+		giturl = fmt.Sprintf("%s/projects/%d/repository/commits", g.ApiURL, g.ProjectID)
 	} else {
-		giturl = fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/commits?since=%s", g.ProjectID, tagDate)
+		giturl = fmt.Sprintf("%s/projects/%d/repository/commits?since=%s", g.ApiURL, g.ProjectID, tagDate)
 		fmt.Println(giturl)
 	}
 
@@ -69,7 +69,7 @@ func (g Client) GetCommitsSinceRelease(sinceRelease string) ([]changelog.Commit,
 }
 
 func (g Client) getTagCommitDate(tag string) (string, error) {
-	tagUrl := fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/tags/%s", g.ProjectID, url.PathEscape(tag))
+	tagUrl := fmt.Sprintf("%s/projects/%d/repository/tags/%s", g.ApiURL, g.ProjectID, url.PathEscape(tag))
 	fmt.Println(tagUrl)
 	tagReq, err := http.NewRequest("GET", tagUrl, nil)
 	if err != nil {
