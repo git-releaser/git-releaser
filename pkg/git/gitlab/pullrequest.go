@@ -197,7 +197,7 @@ func (g Client) closeOldPullRequests(currentSource string) error {
 		// Check if the merge request is open and has a "release" label
 		if mr.State == "opened" && contains(mr.Labels, "release") && mr.SourceBranch != currentSource {
 			// Close the merge request
-			err := g.closeMergeRequest(mr.ID)
+			err := g.closeMergeRequest(mr.IID)
 			if err != nil {
 				return err
 			}
