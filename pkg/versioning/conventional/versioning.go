@@ -2,6 +2,7 @@ package conventional
 
 import (
 	"github.com/Masterminds/semver"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/thenativeweb/get-next-version/conventionalcommits"
 	"github.com/thschue/git-releaser/pkg/config"
 )
@@ -44,6 +45,8 @@ func (v *Version) SetNextVersion() error {
 func (v *Version) GetVersions() config.Versions {
 	return v.Versions
 }
+
+func (v *Version) GetHistory() []object.Commit { return v.Commits }
 
 func (v *Version) getConventionalCommitTypes() (ConventionalCommitTypesResult, error) {
 	conventionalCommitTypes := []conventionalcommits.Type{}
