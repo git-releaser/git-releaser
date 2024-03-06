@@ -110,6 +110,7 @@ func CommitManifest(branchName string, userid string, token string, content stri
 	err = repository.Push(&options)
 	if err != nil {
 		if errors.Is(err, git.ErrNonFastForwardUpdate) {
+			fmt.Println("Fixing non-fast-forward update")
 			// Fetch the latest changes from the remote repository
 			err = repository.Fetch(&git.FetchOptions{
 				RemoteName: "origin",
@@ -155,7 +156,7 @@ func CommitManifest(branchName string, userid string, token string, content stri
 				return err
 			}
 		} else {
-			fmt.Println(err)
+			fmt.Println("Error updating branch: " + err.Error())
 			return err
 		}
 	}
