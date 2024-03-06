@@ -151,11 +151,11 @@ func CommitManifest(branchName string, userid string, token string, content stri
 			// Try to push the changes to the remote repository again
 			err = repository.Push(&options)
 			if err != nil {
-				fmt.Println("Could not push changes")
+				fmt.Println("Error while pushing: " + err.Error())
 				return err
 			}
 		} else {
-			fmt.Println("Could not push changes")
+			fmt.Println(err)
 			return err
 		}
 	}
