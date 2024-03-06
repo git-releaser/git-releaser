@@ -16,6 +16,11 @@ import (
 )
 
 func CommitManifest(branchName string, userid string, token string, content string, versions config.Versions, extraFiles []config.ExtraFileConfig, dryRun bool) error {
+	auth := &githttp.BasicAuth{
+		Username: userid,
+		Password: token,
+	}
+
 	filePath := ".git-releaser-manifest.json"
 
 	repository, err := git.PlainOpen(".")
@@ -25,6 +30,16 @@ func CommitManifest(branchName string, userid string, token string, content stri
 
 	worktree, err := repository.Worktree()
 	if err != nil {
+		return err
+	}
+
+	// Pull the latest changes from the remote repository
+	err = worktree.Pull(&git.PullOptions{
+		RemoteName: "origin",
+		Auth:       auth,
+	})
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		fmt.Println("Could not pull the latest changes")
 		return err
 	}
 
@@ -83,10 +98,6 @@ func CommitManifest(branchName string, userid string, token string, content stri
 		return err
 	}
 
-	auth := &githttp.BasicAuth{
-		Username: userid,
-		Password: token,
-	}
 	options := git.PushOptions{
 		RemoteName: "origin",
 		RefSpecs: []gitconfig.RefSpec{

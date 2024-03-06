@@ -29,9 +29,10 @@ type VersioningConfig struct {
 }
 
 type SimpleCommitTypes struct {
-	Patch []string `yaml:"patch"`
-	Minor []string `yaml:"minor"`
-	Major []string `yaml:"major"`
+	Patch        []string `yaml:"patch"`
+	Minor        []string `yaml:"minor"`
+	Major        []string `yaml:"major"`
+	DefaultPatch bool     `yaml:"default_patch"`
 }
 
 type ExtraFileConfig struct {
