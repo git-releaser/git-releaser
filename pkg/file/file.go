@@ -146,6 +146,8 @@ func CommitManifest(branchName string, userid string, token string, content stri
 				return err
 			}
 
+			options.Force = true
+
 			// Try to push the changes to the remote repository again
 			err = repository.Push(&options)
 			if err != nil {
