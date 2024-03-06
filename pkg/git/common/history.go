@@ -35,7 +35,7 @@ func GetGitHistory(path string, tag string) ([]object.Commit, error) {
 	// Iterate over the commit history
 	err = iter.ForEach(func(c *object.Commit) error {
 		// Only print the commits that are descendants of the tag
-		if c.Committer.When.After(commit.Committer.When) && c.NumParents() > 1 {
+		if c.Committer.When.After(commit.Committer.When) && c.NumParents() > 0 {
 			lines := strings.Split(c.Message, "\n")
 			if len(lines) > 0 && strings.HasPrefix(lines[0], "Merge pull request") {
 				lines = lines[1:]
