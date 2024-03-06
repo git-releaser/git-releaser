@@ -109,56 +109,52 @@ func CommitManifest(branchName string, userid string, token string, content stri
 	// Push the changes to the remote repository
 	err = repository.Push(&options)
 	if err != nil {
-		if errors.Is(err, git.ErrNonFastForwardUpdate) {
-			fmt.Println("Fixing non-fast-forward update")
-			// Fetch the latest changes from the remote repository
-			err = repository.Fetch(&git.FetchOptions{
-				RemoteName: "origin",
-				Auth:       auth,
-			})
-			if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-				fmt.Println("Could not fetch the latest changes")
-				return err
-			}
-
-			// Get the latest commit on the remote branch
-			remoteRef, err := repository.Reference(plumbing.ReferenceName(fmt.Sprintf("refs/remotes/origin/%s", branchName)), true)
-			if err != nil {
-				fmt.Println("Could not get the latest commit on the remote branch")
-				return err
-			}
-
-			// Rebase the local branch on top of the remote branch
-			err = worktree.Checkout(&git.CheckoutOptions{
-				Branch: plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", branchName)),
-				Create: false,
-			})
-			if err != nil {
-				fmt.Println("Could not checkout to the local branch")
-				return err
-			}
-
-			err = worktree.Reset(&git.ResetOptions{
-				Commit: remoteRef.Hash(),
-				Mode:   git.HardReset,
-			})
-			if err != nil {
-				fmt.Println("Could not rebase the local branch on top of the remote branch")
-				return err
-			}
-
-			options.Force = true
-
-			// Try to push the changes to the remote repository again
-			err = repository.Push(&options)
-			if err != nil {
-				fmt.Println("Error while pushing: " + err.Error())
-				return err
-			}
-		} else {
-			fmt.Println("Error updating branch: " + err.Error())
+		fmt.Println("Fixing non-fast-forward update")
+		// Fetch the latest changes from the remote repository
+		err = repository.Fetch(&git.FetchOptions{
+			RemoteName: "origin",
+			Auth:       auth,
+		})
+		if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+			fmt.Println("Could not fetch the latest changes")
 			return err
 		}
+
+		// Get the latest commit on the remote branch
+		remoteRef, err := repository.Reference(plumbing.ReferenceName(fmt.Sprintf("refs/remotes/origin/%s", branchName)), true)
+		if err != nil {
+			fmt.Println("Could not get the latest commit on the remote branch")
+			return err
+		}
+
+		// Rebase the local branch on top of the remote branch
+		err = worktree.Checkout(&git.CheckoutOptions{
+			Branch: plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", branchName)),
+			Create: false,
+		})
+		if err != nil {
+			fmt.Println("Could not checkout to the local branch")
+			return err
+		}
+
+		err = worktree.Reset(&git.ResetOptions{
+			Commit: remoteRef.Hash(),
+			Mode:   git.HardReset,
+		})
+		if err != nil {
+			fmt.Println("Could not rebase the local branch on top of the remote branch")
+			return err
+		}
+
+		options.Force = true
+
+		// Try to push the changes to the remote repository again
+		err = repository.Push(&options)
+		if err != nil {
+			fmt.Println("Error while pushing: " + err.Error())
+			return err
+		}
+
 	}
 
 	return nil
