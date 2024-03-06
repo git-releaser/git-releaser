@@ -1,7 +1,9 @@
 package versioning
 
 import (
+	"fmt"
 	"github.com/Masterminds/semver"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/thschue/git-releaser/pkg/config"
 	"github.com/thschue/git-releaser/pkg/git/common"
 	"github.com/thschue/git-releaser/pkg/manifest"
@@ -14,6 +16,7 @@ type IVersion interface {
 	SetNextVersion() error
 	GetNextVersion() (semver.Version, bool)
 	GetVersions() config.Versions
+	GetHistory() []object.Commit
 }
 
 func NewVersion(cfg config.VersioningConfig) IVersion {
@@ -22,7 +25,10 @@ func NewVersion(cfg config.VersioningConfig) IVersion {
 		panic(err)
 	}
 
-	history, _ := common.GetGitHistory("", currentVersion.Original())
+	history, err := common.GetGitHistory("", currentVersion.Original())
+	if err != nil {
+		fmt.Println("Could not get git history:" + err.Error())
+	}
 
 	switch cfg.Strategy {
 	case "conventional":
