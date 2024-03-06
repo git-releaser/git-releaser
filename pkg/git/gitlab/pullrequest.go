@@ -201,9 +201,14 @@ func (g Client) closeOldPullRequests(currentSource string) error {
 			if err != nil {
 				return err
 			}
+
+			// Delete the source branch
+			err = g.deleteBranch(mr.SourceBranch)
+			if err != nil {
+				return err
+			}
 		}
 	}
-
 	return nil
 }
 
