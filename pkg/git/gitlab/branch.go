@@ -90,3 +90,29 @@ func (g Client) createBranch(baseBranch string, branchName string) error {
 	fmt.Printf("Branch '%s' created successfully.\n", branchName)
 	return nil
 }
+
+func (g Client) deleteBranch(branchName string) error {
+	url := fmt.Sprintf("%s/projects/%d/repository/branches/%s", g.ApiURL, g.ProjectID, branchName)
+
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to delete branch. Status code: %d, Body: %s", resp.StatusCode, body)
+	}
+
+	fmt.Printf("Branch '%s' deleted successfully.\n", branchName)
+	return nil
+}
