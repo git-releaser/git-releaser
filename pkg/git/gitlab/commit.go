@@ -61,7 +61,6 @@ func (g Client) GetCommitsSinceRelease(sinceRelease string) ([]changelog.Commit,
 
 func (g Client) getTagCommitDate(tag string) (string, error) {
 	tagUrl := fmt.Sprintf("%s/projects/%d/repository/tags/%s", g.ApiURL, g.ProjectID, url.PathEscape(tag))
-	fmt.Println(tagUrl)
 	tagReq, err := http.NewRequest("GET", tagUrl, nil)
 	if err != nil {
 		return "", err
