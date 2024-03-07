@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func (g Client) CreateRelease(baseBranch string, version config.Versions, description string, propagateTargets []config.PropagationTarget) error {
+func (g Client) CreateRelease(baseBranch string, version config.Versions, description string) error {
 	highestRelease, err := g.GetHighestRelease()
 	if err != nil {
 		fmt.Println("github: could not get highest release")

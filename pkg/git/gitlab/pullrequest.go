@@ -40,7 +40,7 @@ func (g Client) createPullRequest(source string, target string, versions config.
 	changelog := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
 	title := naming.GeneratePrTitle(versions.NextVersion.Original())
-	description := naming.CreatePrDescription(versions.NextVersion.Original(), changelog)
+	description := naming.CreatePrDescription(versions.NextVersion.Original(), changelog, g.PropagationTargets)
 
 	payload := map[string]interface{}{
 		"source_branch": source,

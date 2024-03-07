@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	TargetBranch       string              `yaml:"target_branch"`
+	BranchPrefix       string              `yaml:"branch_prefix"`
 	Provider           string              `yaml:"provider"`
 	ExtraFiles         []ExtraFileConfig   `yaml:"extra_files"`
 	UserId             string              `yaml:"user_id"`
@@ -39,6 +40,7 @@ type SimpleCommitTypes struct {
 type PropagationTarget struct {
 	TargetBranch string `yaml:"target_branch"`
 	Target       string `yaml:"target"`
+	Description  string `yaml:"description"`
 }
 
 type ExtraFileConfig struct {

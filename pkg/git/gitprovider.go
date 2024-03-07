@@ -12,61 +12,64 @@ import (
 )
 
 type GitConfig struct {
-	Provider         string
-	UserId           string
-	AccessToken      string
-	ProjectUrl       string
-	ApiUrl           string
-	AdditionalConfig map[string]string
-	DryRun           bool
+	Provider           string
+	UserId             string
+	AccessToken        string
+	ProjectUrl         string
+	ApiUrl             string
+	AdditionalConfig   map[string]string
+	PropagationTargets []config.PropagationTarget
+	DryRun             bool
 }
 type GitProvider interface {
-	CheckCreateBranch(baseBranch string, targetVersion string) (string, error)
+	CheckCreateBranch(baseBranch string, targetVersion string, prefix string) (string, error)
 	CheckCreatePullRequest(source string, target string, versions config.Versions) error
 	CommitManifest(branchName string, content string, versions config.Versions, extraFiles []config.ExtraFileConfig) error
-	CreateRelease(baseBranch string, version config.Versions, description string, propagationTargets []config.PropagationTarget) error
+	CreateRelease(baseBranch string, version config.Versions, description string) error
 	CheckRelease(versions config.Versions) (bool, error)
 	GetCommitsSinceRelease(version string) ([]changelog.Commit, error)
 	GetHighestRelease() (string, error)
 }
 
-func NewGitClient(config GitConfig) GitProvider {
-	if config.Provider == "" {
-		config.Provider = "github"
+func NewGitClient(gitconfig GitConfig) GitProvider {
+	if gitconfig.Provider == "" {
+		gitconfig.Provider = "github"
 	}
 
-	switch strings.ToLower(config.Provider) {
+	switch strings.ToLower(gitconfig.Provider) {
 	case "gitlab":
-		if config.ApiUrl == "" {
-			config.ApiUrl = "https://gitlab.com/api/v4"
+		if gitconfig.ApiUrl == "" {
+			gitconfig.ApiUrl = "https://gitlab.com/api/v4"
 		}
 
-		projectID, err := strconv.Atoi(config.AdditionalConfig["projectId"])
+		projectID, err := strconv.Atoi(gitconfig.AdditionalConfig["projectId"])
 		if err != nil {
 			log.Fatal(err)
 		}
 		return &gitlab.Client{
-			UserId:      config.UserId,
-			AccessToken: config.AccessToken,
-			ApiURL:      config.ApiUrl,
-			ProjectID:   projectID,
-			ProjectURL:  config.ProjectUrl,
-			DryRun:      config.DryRun,
+			UserId:             gitconfig.UserId,
+			AccessToken:        gitconfig.AccessToken,
+			ApiURL:             gitconfig.ApiUrl,
+			ProjectID:          projectID,
+			ProjectURL:         gitconfig.ProjectUrl,
+			PropagationTargets: gitconfig.PropagationTargets,
+			DryRun:             gitconfig.DryRun,
 		}
 
 	case "github":
-		if config.ApiUrl == "" {
-			config.ApiUrl = "https://api.github.com"
+		if gitconfig.ApiUrl == "" {
+			gitconfig.ApiUrl = "https://api.github.com"
 		}
 
-		fmt.Println(config.UserId)
+		fmt.Println(gitconfig.UserId)
 		return github.NewClient(github.Client{
-			UserId:      config.UserId,
-			AccessToken: config.AccessToken,
-			ProjectURL:  config.ProjectUrl,
-			Repository:  config.AdditionalConfig["repository"],
-			ApiURL:      config.ApiUrl,
-			DryRun:      config.DryRun,
+			UserId:             gitconfig.UserId,
+			AccessToken:        gitconfig.AccessToken,
+			ProjectURL:         gitconfig.ProjectUrl,
+			Repository:         gitconfig.AdditionalConfig["repository"],
+			ApiURL:             gitconfig.ApiUrl,
+			PropagationTargets: gitconfig.PropagationTargets,
+			DryRun:             gitconfig.DryRun,
 		})
 	}
 	return nil

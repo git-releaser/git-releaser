@@ -36,24 +36,23 @@ to quickly create a Cobra application.`,
 			additionalConfig["projectId"] = fmt.Sprintf("%d", viper.GetInt("project_id"))
 		}
 
-		fmt.Println(viper.GetString("project_url"))
-
-		g := git.NewGitClient(git.GitConfig{
-			Provider:         viper.GetString("provider"),
-			AccessToken:      viper.GetString("token"),
-			UserId:           viper.GetString("user_id"),
-			ProjectUrl:       viper.GetString("project_url"),
-			ApiUrl:           viper.GetString("api_url"),
-			AdditionalConfig: additionalConfig,
-			DryRun:           viper.GetBool("dry-run"),
-		})
-
 		conf, err := config.ReadConfig(viper.ConfigFileUsed())
 		if err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
 				fmt.Println(err)
 			}
 		}
+
+		g := git.NewGitClient(git.GitConfig{
+			Provider:           viper.GetString("provider"),
+			AccessToken:        viper.GetString("token"),
+			UserId:             viper.GetString("user_id"),
+			ProjectUrl:         viper.GetString("project_url"),
+			ApiUrl:             viper.GetString("api_url"),
+			AdditionalConfig:   additionalConfig,
+			PropagationTargets: conf.PropagationTargets,
+			DryRun:             viper.GetBool("dry-run"),
+		})
 
 		if conf.TargetBranch == "" {
 			conf.TargetBranch = "main"
@@ -75,7 +74,7 @@ to quickly create a Cobra application.`,
 
 		if !releaseExists {
 			fmt.Println("Running release for version " + versions.CurrentVersion.Original())
-			err = g.CreateRelease(conf.TargetBranch, versions, "", conf.PropagationTargets)
+			err = g.CreateRelease(conf.TargetBranch, versions, "")
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -87,7 +86,7 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		branch, err := g.CheckCreateBranch(conf.TargetBranch, versions.NextVersion.Original())
+		branch, err := g.CheckCreateBranch(conf.TargetBranch, versions.NextVersion.Original(), conf.BranchPrefix)
 		if err != nil {
 			fmt.Println("Could not check for Branch: " + err.Error())
 		}

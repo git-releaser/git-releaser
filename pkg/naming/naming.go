@@ -2,6 +2,7 @@ package naming
 
 import (
 	"fmt"
+	"github.com/git-releaser/git-releaser/pkg/config"
 )
 
 const EnvPrefix = "GIT_RELEASER"
@@ -14,8 +15,18 @@ func GeneratePrTitle(version string) string {
 	return title
 }
 
-func CreatePrDescription(version string, changelog string) string {
-	return fmt.Sprintf("This is a description for the new pull request for version %s.\n\n## Changelog\n\n%s", version, changelog)
+func CreatePrDescription(version string, changelog string, propagationTargets []config.PropagationTarget) string {
+	description := fmt.Sprintf("This is a description for the new pull request for version %s.\n\n## Changelog\n\n%s", version, changelog)
+
+	if len(propagationTargets) > 0 {
+		description += "\n\n## Propagation Targets\n\n"
+		for _, target := range propagationTargets {
+			description += fmt.Sprintf("- %s\n", target.Description)
+		}
+	}
+
+	return description
+
 }
 
 func CreateReleaseDescription(version string, changelog string) string {
@@ -23,5 +34,8 @@ func CreateReleaseDescription(version string, changelog string) string {
 }
 
 func CreateBranchName(prefix string, version string) string {
-	return fmt.Sprintf("release/%s", version)
+	if prefix == "" {
+		prefix = "release"
+	}
+	return fmt.Sprintf("%s-%s", prefix, version)
 }
