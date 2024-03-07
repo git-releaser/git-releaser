@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/git-releaser/git-releaser/pkg/naming"
 	"io"
 	"net/http"
 )
 
-func (g Client) CheckCreateBranch(baseBranch string, version string) (string, error) {
-	branchName := fmt.Sprintf("release-%s", version)
+func (g Client) CheckCreateBranch(baseBranch string, version string, prefix string) (string, error) {
+	branchName := naming.CreateBranchName(prefix, version)
+
 	branchExists, _ := g.branchExists(branchName)
 	if !branchExists {
 		err := g.createBranch(baseBranch, branchName)

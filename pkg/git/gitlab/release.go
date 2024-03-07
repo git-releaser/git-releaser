@@ -9,15 +9,15 @@ import (
 	"strconv"
 )
 
-func (g Client) CreateRelease(baseBranch string, version config.Versions, description string, propagationTargets []config.PropagationTarget) error {
+func (g Client) CreateRelease(baseBranch string, version config.Versions, description string) error {
 	err := g.createTag(g.ProjectID, baseBranch, version, description)
 	if err != nil {
 		return err
 	}
 
-	if len(propagationTargets) > 0 {
+	if len(g.PropagationTargets) > 0 {
 		fmt.Println("Propagating release to other repositories...")
-		for _, target := range propagationTargets {
+		for _, target := range g.PropagationTargets {
 			if target.TargetBranch == "" {
 				target.TargetBranch = baseBranch
 			}
