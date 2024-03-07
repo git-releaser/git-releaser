@@ -31,7 +31,6 @@ func (g Client) GetCommitsSinceRelease(sinceRelease string) ([]changelog.Commit,
 		giturl = fmt.Sprintf("%s/projects/%d/repository/commits", g.ApiURL, g.ProjectID)
 	} else {
 		giturl = fmt.Sprintf("%s/projects/%d/repository/commits?since=%s", g.ApiURL, g.ProjectID, tagDate)
-		fmt.Println(giturl)
 	}
 
 	req, err := http.NewRequest("GET", giturl, nil)
