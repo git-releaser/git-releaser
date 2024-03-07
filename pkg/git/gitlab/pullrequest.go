@@ -12,6 +12,7 @@ import (
 )
 
 func (g Client) CheckCreatePullRequest(source string, target string, versions config.Versions) error {
+	fmt.Println("API URL: " + g.ApiURL)
 	err := g.createPullRequest(source, target, versions)
 	if err != nil {
 		return err
