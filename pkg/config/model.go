@@ -18,8 +18,8 @@ type Config struct {
 	APIUrl             string              `yaml:"api_url"`
 	ProjectID          int                 `yaml:"project_id"`
 	Repository         string              `yaml:"repository,omitempty"`
+	PropagationTargets []PropagationTarget `yaml:"propagation_targets"`
 	Versioning         VersioningConfig    `yaml:"versioning"`
-	PropagationTargets []PropagationTarget `yaml:"propagation_targets,omitempty"`
 }
 
 type VersioningConfig struct {
