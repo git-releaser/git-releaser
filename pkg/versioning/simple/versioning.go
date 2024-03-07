@@ -3,8 +3,8 @@ package simple
 import (
 	"fmt"
 	"github.com/Masterminds/semver"
+	"github.com/git-releaser/git-releaser/pkg/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/thschue/git-releaser/pkg/config"
 	"strings"
 )
 

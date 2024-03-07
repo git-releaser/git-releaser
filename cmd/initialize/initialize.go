@@ -6,9 +6,9 @@ package initialize
 import (
 	"errors"
 	"fmt"
+	"github.com/git-releaser/git-releaser/pkg/helpers"
+	"github.com/git-releaser/git-releaser/pkg/naming"
 	"github.com/spf13/viper"
-	"github.com/thschue/git-releaser/pkg/helpers"
-	"github.com/thschue/git-releaser/pkg/naming"
 	"os"
 
 	"github.com/spf13/cobra"

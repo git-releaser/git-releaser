@@ -2,10 +2,10 @@ package git
 
 import (
 	"fmt"
-	"github.com/thschue/git-releaser/pkg/changelog"
-	"github.com/thschue/git-releaser/pkg/config"
-	"github.com/thschue/git-releaser/pkg/git/github"
-	"github.com/thschue/git-releaser/pkg/git/gitlab"
+	"github.com/git-releaser/git-releaser/pkg/changelog"
+	"github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/git/github"
+	"github.com/git-releaser/git-releaser/pkg/git/gitlab"
 	"log"
 	"strconv"
 	"strings"
@@ -24,7 +24,7 @@ type GitProvider interface {
 	CheckCreateBranch(baseBranch string, targetVersion string) (string, error)
 	CheckCreatePullRequest(source string, target string, versions config.Versions) error
 	CommitManifest(branchName string, content string, versions config.Versions, extraFiles []config.ExtraFileConfig) error
-	CreateRelease(baseBranch string, version config.Versions, description string) error
+	CreateRelease(baseBranch string, version config.Versions, description string, propagationTargets []config.PropagationTarget) error
 	CheckRelease(versions config.Versions) (bool, error)
 	GetCommitsSinceRelease(version string) ([]changelog.Commit, error)
 	GetHighestRelease() (string, error)

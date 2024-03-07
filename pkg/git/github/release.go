@@ -3,15 +3,15 @@ package github
 import (
 	"fmt"
 	"github.com/Masterminds/semver"
+	"github.com/git-releaser/git-releaser/pkg/changelog"
+	"github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/naming"
 	"github.com/google/go-github/v33/github"
-	"github.com/thschue/git-releaser/pkg/changelog"
-	"github.com/thschue/git-releaser/pkg/config"
-	"github.com/thschue/git-releaser/pkg/naming"
 	"sort"
 	"strings"
 )
 
-func (g Client) CreateRelease(baseBranch string, version config.Versions, description string) error {
+func (g Client) CreateRelease(baseBranch string, version config.Versions, description string, propagateTargets []config.PropagationTarget) error {
 	highestRelease, err := g.GetHighestRelease()
 	if err != nil {
 		fmt.Println("github: could not get highest release")

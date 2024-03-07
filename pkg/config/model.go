@@ -8,16 +8,17 @@ import (
 )
 
 type Config struct {
-	TargetBranch string            `yaml:"target_branch"`
-	Provider     string            `yaml:"provider"`
-	ExtraFiles   []ExtraFileConfig `yaml:"extra_files"`
-	UserId       string            `yaml:"user_id"`
-	AccessToken  string            `yaml:"access_token"`
-	ProjectUrl   string            `yaml:"project_url"`
-	APIUrl       string            `yaml:"api_url"`
-	ProjectID    int               `yaml:"project_id"`
-	Repository   string            `yaml:"repository,omitempty"`
-	Versioning   VersioningConfig  `yaml:"versioning"`
+	TargetBranch       string              `yaml:"target_branch"`
+	Provider           string              `yaml:"provider"`
+	ExtraFiles         []ExtraFileConfig   `yaml:"extra_files"`
+	UserId             string              `yaml:"user_id"`
+	AccessToken        string              `yaml:"access_token"`
+	ProjectUrl         string              `yaml:"project_url"`
+	APIUrl             string              `yaml:"api_url"`
+	ProjectID          int                 `yaml:"project_id"`
+	Repository         string              `yaml:"repository,omitempty"`
+	Versioning         VersioningConfig    `yaml:"versioning"`
+	PropagationTargets []PropagationTarget `yaml:"propagation_targets,omitempty"`
 }
 
 type VersioningConfig struct {
@@ -33,6 +34,11 @@ type SimpleCommitTypes struct {
 	Minor        []string `yaml:"minor"`
 	Major        []string `yaml:"major"`
 	DefaultPatch bool     `yaml:"default_patch"`
+}
+
+type PropagationTarget struct {
+	TargetBranch string `yaml:"target_branch"`
+	Target       string `yaml:"target"`
 }
 
 type ExtraFileConfig struct {

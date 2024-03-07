@@ -6,12 +6,12 @@ package changelog
 import (
 	"errors"
 	"fmt"
+	"github.com/git-releaser/git-releaser/pkg/changelog"
+	"github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/git"
+	"github.com/git-releaser/git-releaser/pkg/helpers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/thschue/git-releaser/pkg/changelog"
-	"github.com/thschue/git-releaser/pkg/config"
-	"github.com/thschue/git-releaser/pkg/git"
-	"github.com/thschue/git-releaser/pkg/helpers"
 	"os"
 )
 
