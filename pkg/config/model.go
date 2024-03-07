@@ -58,6 +58,7 @@ type Versions struct {
 
 func ReadConfig(filename string) (Config, error) {
 	var config Config
+
 	file, err := os.ReadFile(filename)
 	if err != nil {
 		return config, err

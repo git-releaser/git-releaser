@@ -3,7 +3,7 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 */
 package main
 
-import "github.com/thschue/git-releaser/cmd"
+import "github.com/git-releaser/git-releaser/cmd"
 
 var (
 	version = "dev"
