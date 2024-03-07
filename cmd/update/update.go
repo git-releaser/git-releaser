@@ -58,6 +58,8 @@ to quickly create a Cobra application.`,
 			conf.TargetBranch = "main"
 		}
 
+		fmt.Println("API URL: " + viper.GetString("api_url"))
+
 		v := versioning.NewVersion(conf.Versioning)
 
 		err = v.SetNextVersion()
