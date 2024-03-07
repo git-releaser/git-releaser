@@ -2,7 +2,7 @@ package file
 
 import (
 	"github.com/Masterminds/semver"
-	"github.com/thschue/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/config"
 	"os"
 	"testing"
 )

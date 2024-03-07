@@ -3,12 +3,12 @@ package file
 import (
 	"errors"
 	"fmt"
+	"github.com/git-releaser/git-releaser/pkg/config"
 	"github.com/go-git/go-git/v5"
 	gitconfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/thschue/git-releaser/pkg/config"
 	"os"
 	"path/filepath"
 	"regexp"

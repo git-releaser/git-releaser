@@ -3,20 +3,12 @@ package gitlab
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/thschue/git-releaser/pkg/changelog"
-	releaserconfig "github.com/thschue/git-releaser/pkg/config"
-	"github.com/thschue/git-releaser/pkg/file"
+	"github.com/git-releaser/git-releaser/pkg/changelog"
+	releaserconfig "github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/file"
 	"net/http"
 	"net/url"
 )
-
-// ConventionalCommit represents a conventional commit structure
-type ConventionalCommit struct {
-	Type    string `json:"type"`
-	Scope   string `json:"scope"`
-	Message string `json:"message"`
-	ID      string `json:"id"`
-}
 
 func (g Client) CommitManifest(branchName string, content string, versions releaserconfig.Versions, extraFiles []releaserconfig.ExtraFileConfig) error {
 	err := file.CommitManifest(branchName, g.UserId, g.AccessToken, content, versions, extraFiles, g.DryRun)

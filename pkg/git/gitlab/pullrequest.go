@@ -4,22 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/thschue/git-releaser/pkg/changelog"
-	"github.com/thschue/git-releaser/pkg/config"
-	"github.com/thschue/git-releaser/pkg/naming"
+	"github.com/git-releaser/git-releaser/pkg/changelog"
+	"github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/naming"
 	"io"
 	"net/http"
 )
-
-type MergeRequest struct {
-	ID           int      `json:"id"`
-	IID          int      `json:"iid"`
-	SourceBranch string   `json:"source_branch"`
-	TargetBranch string   `json:"target_branch"`
-	Title        string   `json:"title"`
-	Labels       []string `json:"labels"`
-	State        string   `json:"state"`
-}
 
 func (g Client) CheckCreatePullRequest(source string, target string, versions config.Versions) error {
 	err := g.createPullRequest(source, target, versions)

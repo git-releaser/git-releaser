@@ -5,12 +5,12 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/git-releaser/git-releaser/cmd/changelog"
+	"github.com/git-releaser/git-releaser/cmd/initialize"
+	"github.com/git-releaser/git-releaser/cmd/update"
+	"github.com/git-releaser/git-releaser/pkg/naming"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/thschue/git-releaser/cmd/changelog"
-	"github.com/thschue/git-releaser/cmd/initialize"
-	"github.com/thschue/git-releaser/cmd/update"
-	"github.com/thschue/git-releaser/pkg/naming"
 	"os"
 )
 

@@ -2,9 +2,9 @@ package github
 
 import (
 	"fmt"
-	"github.com/thschue/git-releaser/pkg/changelog"
-	releaserconfig "github.com/thschue/git-releaser/pkg/config"
-	"github.com/thschue/git-releaser/pkg/file"
+	"github.com/git-releaser/git-releaser/pkg/changelog"
+	releaserconfig "github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/file"
 	"strings"
 	"time"
 
