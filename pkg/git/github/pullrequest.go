@@ -27,7 +27,7 @@ func (g Client) createPullRequest(source string, target string, versions config.
 	}
 
 	commits, _ := g.GetCommitsSinceRelease(versions.CurrentVersion.Original())
-	conventionalCommits := changelog.ParseConventionalCommits(commits)
+	conventionalCommits := changelog.ParseCommits(commits)
 	cl := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
 	title := naming.GeneratePrTitle(versions.NextVersion.Original())

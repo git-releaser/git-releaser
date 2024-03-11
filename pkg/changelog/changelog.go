@@ -30,7 +30,7 @@ var validCommitTypes = map[string]string{
 	// Add more types as needed
 }
 
-func ParseConventionalCommits(commits []Commit) []ConventionalCommit {
+func ParseCommits(commits []Commit) []ConventionalCommit {
 	var conventionalCommits []ConventionalCommit
 	var commitTypes []string
 	for k := range validCommitTypes {

@@ -69,7 +69,7 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			fmt.Println(err)
 		}
-		conventionalCommits := changelog.ParseConventionalCommits(commits)
+		conventionalCommits := changelog.ParseCommits(commits)
 		log := changelog.GenerateChangelog(conventionalCommits, viper.GetString("project_url"))
 		fmt.Println("Last Version: " + viper.GetString("since_version"))
 		fmt.Println(log)
