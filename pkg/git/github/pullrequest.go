@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func (g Client) CheckCreatePullRequest(source string, target string, versions config.Versions) error {
+func (g Client) CheckCreateReleasePullRequest(source string, target string, versions config.Versions) error {
 	err := g.createPullRequest(source, target, versions)
 	if err != nil {
 		return err

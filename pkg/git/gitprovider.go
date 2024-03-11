@@ -23,7 +23,7 @@ type GitConfig struct {
 }
 type GitProvider interface {
 	CheckCreateBranch(baseBranch string, targetVersion string, prefix string) (string, error)
-	CheckCreatePullRequest(source string, target string, versions config.Versions) error
+	CheckCreateReleasePullRequest(source string, target string, versions config.Versions) error
 	CommitManifest(branchName string, content string, versions config.Versions, extraFiles []config.ExtraFileConfig) error
 	CreateRelease(baseBranch string, version config.Versions, description string) error
 	CheckRelease(versions config.Versions) (bool, error)
