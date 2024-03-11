@@ -1,3 +1,0 @@
-test: v1.0.3 # x-git-releaser:my-tag
-  another-test: v1.0.4 # x-git-releaser:my-other-tag
-  - test: 1.0.5 # x-git-releaser:my-third-tag
