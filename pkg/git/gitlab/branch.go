@@ -22,17 +22,12 @@ func (g Client) CheckCreateBranch(baseBranch string, version string, prefix stri
 	return branchName, nil
 }
 func (g Client) branchExists(branchName string) (bool, error) {
-	url := fmt.Sprintf("%s/projects/%d/repository/branches/%s", g.ApiURL, g.ProjectID, branchName)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return false, err
+	req := GitLabRequest{
+		URL:    fmt.Sprintf("%s/projects/%d/repository/branches/%s", g.ApiURL, g.ProjectID, branchName),
+		Method: http.MethodGet,
 	}
 
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return false, err
 	}

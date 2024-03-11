@@ -1,7 +1,6 @@
 package gitlab
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/git-releaser/git-releaser/pkg/config"
@@ -37,17 +36,12 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 }
 
 func (g Client) CheckRelease(version config.Versions) (bool, error) {
-	url := fmt.Sprintf("%s/projects/%d/repository/tags", g.ApiURL, g.ProjectID)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return false, err
+	req := GitLabRequest{
+		URL:    fmt.Sprintf("%s/projects/%d/repository/tags", g.ApiURL, g.ProjectID),
+		Method: "GET",
 	}
 
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return false, err
 	}
@@ -72,7 +66,11 @@ func (g Client) CheckRelease(version config.Versions) (bool, error) {
 }
 
 func (g Client) createTag(project int, baseBranch string, version config.Versions, description string) error {
-	url := fmt.Sprintf("%s/projects/%d/releases", g.ApiURL, project)
+	var err error
+	req := GitLabRequest{
+		URL:    fmt.Sprintf("%s/projects/%d/releases", g.ApiURL, project),
+		Method: "POST",
+	}
 
 	payload := map[string]interface{}{
 		"tag_name":    version.CurrentVersion.Original(),
@@ -80,18 +78,10 @@ func (g Client) createTag(project int, baseBranch string, version config.Version
 		"description": description,
 	}
 
-	jsonPayload, err := json.Marshal(payload)
+	req.Payload, err = json.Marshal(payload)
 	if err != nil {
 		return err
 	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
 
 	if g.DryRun {
 		fmt.Println("Dry run: would create release with the following data:")
@@ -101,8 +91,7 @@ func (g Client) createTag(project int, baseBranch string, version config.Version
 		return nil
 	}
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return err
 	}
@@ -112,6 +101,6 @@ func (g Client) createTag(project int, baseBranch string, version config.Version
 		return fmt.Errorf("failed to create release. Status code: %d", resp.StatusCode)
 	}
 
-	fmt.Println("Release created successfully (" + url + ")")
+	fmt.Println("Release created successfully (" + req.URL + ")")
 	return nil
 }

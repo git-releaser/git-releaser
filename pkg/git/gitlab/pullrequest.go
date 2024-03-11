@@ -1,7 +1,6 @@
 package gitlab
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/git-releaser/git-releaser/pkg/changelog"
@@ -13,7 +12,7 @@ import (
 
 func (g Client) CheckCreatePullRequest(source string, target string, versions config.Versions) error {
 	fmt.Println("API URL: " + g.ApiURL)
-	err := g.createPullRequest(source, target, versions)
+	err := g.createReleasePullRequest(source, target, versions)
 	if err != nil {
 		return err
 	}
@@ -27,8 +26,10 @@ func (g Client) CheckCreatePullRequest(source string, target string, versions co
 	return nil
 }
 
-func (g Client) createPullRequest(source string, target string, versions config.Versions) error {
-	url := fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID)
+func (g Client) createReleasePullRequest(source string, target string, versions config.Versions) error {
+	req := GitLabRequest{
+		URL: fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID),
+	}
 
 	// Check if a pull request with the same source and target branches already exists
 	existingPrID, err := g.getExistingPullRequestID(source, target)
@@ -51,31 +52,21 @@ func (g Client) createPullRequest(source string, target string, versions config.
 		"labels":        []string{"release"},
 	}
 
-	var req *http.Request
-
-	jsonPayload, err := json.Marshal(payload)
+	req.Payload, err = json.Marshal(payload)
 	if err != nil {
 		return err
 	}
 
 	if existingPrID != 0 {
 		// If the pull request already exists, update its description
-		url = fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, existingPrID)
-
-		req, err = http.NewRequest("PUT", url, bytes.NewBuffer(jsonPayload))
+		req.URL = fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, existingPrID)
+		req.Method = "PUT"
 		if err != nil {
 			return err
 		}
 	} else {
-		// If the pull request doesn't exist, create a new one
-		req, err = http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
-		if err != nil {
-			return err
-		}
+		req.Method = "POST"
 	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
 
 	if g.DryRun {
 		fmt.Println("Dry run: pull request would be created with the following details:")
@@ -86,8 +77,7 @@ func (g Client) createPullRequest(source string, target string, versions config.
 		return nil
 	}
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return err
 	}
@@ -109,21 +99,15 @@ func (g Client) createPullRequest(source string, target string, versions config.
 
 // getExistingPullRequestID retrieves the ID of an existing pull request with the same source and target branches
 func (g Client) getExistingPullRequestID(source, target string) (int, error) {
-	url := fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID)
+	req := GitLabRequest{
+		URL:    fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID),
+		Method: "GET",
+	}
 
-	// Fetch all merge requests
-	req, err := http.NewRequest("GET", url, nil)
+	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return 0, err
 	}
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return 0, err
-	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -157,17 +141,11 @@ func (g Client) getExistingPullRequestID(source, target string) (int, error) {
 }
 
 func (g Client) closeOldPullRequests(currentSource string) error {
-	url := fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID)
-
-	// Fetch all merge requests
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
+	request := GitLabRequest{
+		URL:    fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID),
+		Method: "GET",
 	}
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := g.gitLabRequest(request)
 	if err != nil {
 		return err
 	}
@@ -204,27 +182,22 @@ func (g Client) closeOldPullRequests(currentSource string) error {
 }
 
 func (g Client) closeMergeRequest(id int) error {
-	url := fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, id)
+	var err error
+	req := GitLabRequest{
+		URL:    fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, id),
+		Method: "PUT",
+	}
 
 	payload := map[string]interface{}{
 		"state_event": "close",
 	}
 
-	jsonPayload, err := json.Marshal(payload)
+	req.Payload, err = json.Marshal(payload)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonPayload))
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return err
 	}
