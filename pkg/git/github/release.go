@@ -17,7 +17,7 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 		fmt.Println("github: could not get highest release")
 	}
 	commits, _ := g.GetCommitsSinceRelease(highestRelease)
-	conventionalCommits := changelog.ParseConventionalCommits(commits)
+	conventionalCommits := changelog.ParseCommits(commits)
 	cl := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
 	if description == "" {

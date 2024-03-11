@@ -16,7 +16,7 @@ func (g Client) CommitManifest(branchName string, content string, versions relea
 }
 
 func (g Client) GetCommitsSinceRelease(sinceRelease string) ([]changelog.Commit, error) {
-	var giturl string
+	var req GitLabRequest
 	var tagDate string
 	var err error
 
@@ -28,20 +28,12 @@ func (g Client) GetCommitsSinceRelease(sinceRelease string) ([]changelog.Commit,
 	}
 
 	if tagDate == "" {
-		giturl = fmt.Sprintf("%s/projects/%d/repository/commits", g.ApiURL, g.ProjectID)
+		req.URL = fmt.Sprintf("%s/projects/%d/repository/commits", g.ApiURL, g.ProjectID)
 	} else {
-		giturl = fmt.Sprintf("%s/projects/%d/repository/commits?since=%s", g.ApiURL, g.ProjectID, tagDate)
+		req.URL = fmt.Sprintf("%s/projects/%d/repository/commits?since=%s", g.ApiURL, g.ProjectID, tagDate)
 	}
 
-	req, err := http.NewRequest("GET", giturl, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return nil, err
 	}
@@ -60,16 +52,10 @@ func (g Client) GetCommitsSinceRelease(sinceRelease string) ([]changelog.Commit,
 }
 
 func (g Client) getTagCommitDate(tag string) (string, error) {
-	tagUrl := fmt.Sprintf("%s/projects/%d/repository/tags/%s", g.ApiURL, g.ProjectID, url.PathEscape(tag))
-	tagReq, err := http.NewRequest("GET", tagUrl, nil)
-	if err != nil {
-		return "", err
+	req := GitLabRequest{
+		URL: fmt.Sprintf("%s/projects/%d/repository/tags/%s", g.ApiURL, g.ProjectID, url.PathEscape(tag)),
 	}
-
-	tagReq.Header.Set("PRIVATE-TOKEN", g.AccessToken)
-
-	client := &http.Client{}
-	tagResp, err := client.Do(tagReq)
+	tagResp, err := g.gitLabRequest(req)
 	if err != nil {
 		return "", err
 	}

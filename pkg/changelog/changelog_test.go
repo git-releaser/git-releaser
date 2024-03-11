@@ -46,7 +46,7 @@ func TestParseConventionalCommits(t *testing.T) {
 		},
 	}
 
-	result := ParseConventionalCommits(commits)
+	result := ParseCommits(commits)
 
 	if len(result) != len(expected) {
 		t.Errorf("Expected length: %d, got: %d", len(expected), len(result))

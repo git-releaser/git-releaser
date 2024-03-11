@@ -15,6 +15,77 @@ import (
 	"time"
 )
 
+func CommitFile(branchName string, userid string, token string, fileName string, dryRun bool) error {
+	auth := &githttp.BasicAuth{
+		Username: userid,
+		Password: token,
+	}
+
+	repository, err := git.PlainOpen(".")
+	if err != nil {
+		return err
+	}
+
+	worktree, err := repository.Worktree()
+	if err != nil {
+		return err
+	}
+
+	// Pull the latest changes from the remote repository
+	err = worktree.Pull(&git.PullOptions{
+		RemoteName: "origin",
+		Auth:       auth,
+	})
+	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
+		fmt.Println("Could not pull the latest changes")
+		return err
+	}
+
+	_, err = worktree.Add(fileName)
+	if err != nil {
+		fmt.Println("Could not add file to git: " + filepath.Join(worktree.Filesystem.Root(), fileName))
+	}
+
+	if dryRun {
+		fmt.Println("Dry run: would commit and push changes")
+		return nil
+	}
+	// Commit the changes
+	commit, err := worktree.Commit("releaser: update files", &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "git-releaser",
+			Email: "no-reply@git-releaser.com",
+			When:  time.Now(),
+		},
+	})
+	if err != nil {
+		fmt.Println("Could not commit changes")
+		return err
+	}
+
+	// Update the branch reference to point to the new commit
+	refName := plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", branchName))
+	err = repository.Storer.SetReference(plumbing.NewHashReference(refName, commit))
+	if err != nil {
+		return err
+	}
+
+	options := git.PushOptions{
+		RemoteName: "origin",
+		RefSpecs: []gitconfig.RefSpec{
+			gitconfig.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", branchName, branchName)),
+		},
+		Auth: auth,
+	}
+
+	// Push the changes to the remote repository
+	err = repository.Push(&options)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func CommitManifest(branchName string, userid string, token string, content string, versions config.Versions, extraFiles []config.ExtraFileConfig, dryRun bool) error {
 	auth := &githttp.BasicAuth{
 		Username: userid,
@@ -203,5 +274,30 @@ func replaceVersionBetweenTags(extraFile config.ExtraFileConfig, versions config
 		return err
 	}
 
+	return nil
+}
+
+func ReplaceTaggedLines(filename string, sourceTag string, replaceTag string) error {
+	// Read the contents of the file
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		fmt.Println("Could not read file: " + filename)
+		return err
+	}
+
+	fmt.Println(sourceTag)
+
+	// Define a regular expression to match the version string with the annotation format
+	versionRegex := regexp.MustCompile(`(?m)(.*?)(\d+\.\d+\.\d+)(.*?)# x-git-releaser:` + sourceTag)
+
+	// Replace all occurrences of the version in annotated lines with the new version
+	modifiedContent := versionRegex.ReplaceAllString(string(content), "${1}"+replaceTag+"${3}# x-git-releaser:"+sourceTag)
+
+	// Write the modified contents back to the file
+	err = os.WriteFile(filename, []byte(modifiedContent), 0644)
+	if err != nil {
+		fmt.Println("Could not write file: " + filename)
+		return err
+	}
 	return nil
 }

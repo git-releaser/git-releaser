@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func (g Client) CheckCreatePullRequest(source string, target string, versions config.Versions) error {
+func (g Client) CheckCreateReleasePullRequest(source string, target string, versions config.Versions) error {
 	err := g.createPullRequest(source, target, versions)
 	if err != nil {
 		return err
@@ -27,7 +27,7 @@ func (g Client) createPullRequest(source string, target string, versions config.
 	}
 
 	commits, _ := g.GetCommitsSinceRelease(versions.CurrentVersion.Original())
-	conventionalCommits := changelog.ParseConventionalCommits(commits)
+	conventionalCommits := changelog.ParseCommits(commits)
 	cl := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
 	title := naming.GeneratePrTitle(versions.NextVersion.Original())
