@@ -17,13 +17,8 @@ import (
 
 var ChangeLogCmd = &cobra.Command{
 	Use:   "changelog",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Test the creation of a changelog",
+	Long:  `This command will create a changelog based on the commits since the specified release.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		additionalConfig := make(map[string]string)
 
@@ -35,7 +30,12 @@ to quickly create a Cobra application.`,
 			additionalConfig["projectId"] = fmt.Sprintf("%d", viper.GetInt("project_id"))
 		}
 
-		g := git.NewGitClient(git.GitConfig{
+		if viper.GetString("since_version") == "" {
+			fmt.Println("Please provide a version to compare to.")
+			os.Exit(1)
+		}
+
+		g := git.NewGitClient(git.Config{
 			Provider:         viper.GetString("provider"),
 			AccessToken:      viper.GetString("token"),
 			UserId:           viper.GetString("user_id"),

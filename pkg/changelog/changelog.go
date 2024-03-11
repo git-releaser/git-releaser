@@ -40,10 +40,17 @@ func ParseCommits(commits []Commit) []ConventionalCommit {
 	for _, commit := range commits {
 		parts := strings.SplitN(commit.Message, ":", 2)
 		if len(parts) == 2 {
+			message := strings.Split(strings.TrimSpace(parts[1]), "\n")[0]
 			if slices.Contains(commitTypes, strings.TrimSpace(parts[0])) {
 				message := strings.Split(strings.TrimSpace(parts[1]), "\n")[0]
 				conventionalCommits = append(conventionalCommits, ConventionalCommit{
 					Type:    strings.TrimSpace(parts[0]),
+					Message: message,
+					ID:      commit.ID,
+				})
+			} else {
+				conventionalCommits = append(conventionalCommits, ConventionalCommit{
+					Type:    "other",
 					Message: message,
 					ID:      commit.ID,
 				})
@@ -57,6 +64,8 @@ func ParseCommits(commits []Commit) []ConventionalCommit {
 func GenerateChangelog(commits []ConventionalCommit, projectURL string) string {
 	// Map to store commits grouped by type
 	commitsByType := make(map[string][]ConventionalCommit)
+	// Slice to store other types of commits
+	var otherCommits []ConventionalCommit
 
 	// Set to keep track of unique commit messages
 	uniqueCommits := make(map[string]struct{})
@@ -64,7 +73,11 @@ func GenerateChangelog(commits []ConventionalCommit, projectURL string) string {
 	// Group commits by type and filter duplicates
 	for _, commit := range commits {
 		if _, exists := uniqueCommits[commit.Message]; !exists {
-			commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
+			if _, exists := validCommitTypes[commit.Type]; exists {
+				commitsByType[commit.Type] = append(commitsByType[commit.Type], commit)
+			} else {
+				otherCommits = append(otherCommits, commit)
+			}
 			uniqueCommits[commit.Message] = struct{}{}
 		}
 	}
@@ -84,6 +97,16 @@ func GenerateChangelog(commits []ConventionalCommit, projectURL string) string {
 		}
 
 		changelogBuffer.WriteString("\n") // Add a newline between sections
+	}
+
+	// Add "Others" section if there are any other commits
+	if len(otherCommits) > 0 {
+		changelogBuffer.WriteString("## Others\n")
+		for _, commit := range otherCommits {
+			// Add a link to the commit
+			commitLink := fmt.Sprintf("[%s](%s/commit/%s)", commit.Message, projectURL, commit.ID)
+			changelogBuffer.WriteString(fmt.Sprintf("- %s\n", commitLink))
+		}
 	}
 
 	return changelogBuffer.String()

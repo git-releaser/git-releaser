@@ -7,13 +7,12 @@ import (
 	"github.com/git-releaser/git-releaser/pkg/config"
 	"github.com/git-releaser/git-releaser/pkg/helpers"
 	"github.com/git-releaser/git-releaser/pkg/naming"
-	"io"
 	"net/http"
 )
 
 func (g Client) CheckCreateReleasePullRequest(source string, target string, versions config.Versions) error {
 	// Check if a pull request with the same source and target branches already exists
-	existingPR, err := g.GetMergeRequestBySourceAndTarget(source, target)
+	existingPR, err := g.getMergeRequestBySourceAndTarget(source, target)
 	if err != nil {
 		return err
 	}
@@ -53,8 +52,38 @@ func (g Client) CheckCreateReleasePullRequest(source string, target string, vers
 	return nil
 }
 
+func (g Client) checkCreateFileMergeRequest(source string, target string) error {
+	// Check if a pull request with the same source and target branches already exists
+	existingPR, err := g.getMergeRequestBySourceAndTarget(source, target)
+	if err != nil {
+		return err
+	}
+
+	m := MergeRequest{
+		SourceBranch: source,
+		TargetBranch: target,
+		Title:        fmt.Sprintf("Updating %s to %s", source, target),
+		Labels:       []string{"release"},
+	}
+
+	if existingPR.IID != 0 {
+		// If the pull request already exists, update its description
+		err := existingPR.Update(g)
+		if err != nil {
+			return err
+		}
+
+	} else {
+		err := m.Create(g)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (g Client) closeOldPullRequests(currentSource string) error {
-	mergeRequests, err := g.GetMergeRequests()
+	mergeRequests, err := g.getMergeRequests()
 	if err != nil {
 		return err
 	}
@@ -80,7 +109,7 @@ func (g Client) closeOldPullRequests(currentSource string) error {
 
 func (m MergeRequest) Close(g Client) error {
 	var err error
-	req := GitLabRequest{
+	req := Request{
 		URL:    fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, m.IID),
 		Method: "PUT",
 	}
@@ -100,8 +129,7 @@ func (m MergeRequest) Close(g Client) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to close merge request. Status code: %d, Body: %s", resp.StatusCode, body)
+		return fmt.Errorf("failed to close merge request. Status code: %d, Body: %s", resp.StatusCode, resp.Body)
 	}
 
 	return nil
@@ -110,7 +138,7 @@ func (m MergeRequest) Close(g Client) error {
 func (m MergeRequest) Create(g Client) error {
 	var err error
 
-	req := GitLabRequest{
+	req := Request{
 		URL: fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID),
 	}
 
@@ -135,8 +163,7 @@ func (m MergeRequest) Create(g Client) error {
 	}
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to create/update pull request. Status code: %d, Body: %s", resp.StatusCode, body)
+		return fmt.Errorf("failed to create/update pull request. Status code: %d, Body: %s", resp.StatusCode, resp.Body)
 	}
 
 	fmt.Println("Pull request created successfully.")
@@ -147,7 +174,7 @@ func (m MergeRequest) Create(g Client) error {
 func (m MergeRequest) Update(g Client) error {
 	var err error
 
-	req := GitLabRequest{
+	req := Request{
 		URL: fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, m.IID),
 	}
 
@@ -172,8 +199,7 @@ func (m MergeRequest) Update(g Client) error {
 	}
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to create/update pull request. Status code: %d, Body: %s", resp.StatusCode, body)
+		return fmt.Errorf("failed to create/update pull request. Status code: %d, Body: %s", resp.StatusCode, resp.Body)
 	}
 
 	fmt.Println("Pull request updated successfully.")
@@ -181,8 +207,8 @@ func (m MergeRequest) Update(g Client) error {
 	return nil
 }
 
-func (g Client) GetMergeRequestBySourceAndTarget(source, target string) (MergeRequest, error) {
-	mergeRequests, err := g.GetMergeRequests()
+func (g Client) getMergeRequestBySourceAndTarget(source, target string) (MergeRequest, error) {
+	mergeRequests, err := g.getMergeRequests()
 	if err != nil {
 		return MergeRequest{IID: 0}, err
 	}
@@ -200,8 +226,8 @@ func (g Client) GetMergeRequestBySourceAndTarget(source, target string) (MergeRe
 	return MergeRequest{IID: 0}, nil // No existing pull request found
 }
 
-func (g Client) GetMergeRequests() ([]MergeRequest, error) {
-	req := GitLabRequest{
+func (g Client) getMergeRequests() ([]MergeRequest, error) {
+	req := Request{
 		URL:    fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID),
 		Method: "GET",
 	}
@@ -212,13 +238,12 @@ func (g Client) GetMergeRequests() ([]MergeRequest, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return []MergeRequest{}, fmt.Errorf("failed to fetch merge requests. Status code: %d, Body: %s", resp.StatusCode, body)
+		return []MergeRequest{}, fmt.Errorf("failed to fetch merge requests. Status code: %d, Body: %s", resp.StatusCode, resp.Body)
 	}
 
 	var mergeRequests []MergeRequest
 
-	if err := json.NewDecoder(resp.Body).Decode(&mergeRequests); err != nil {
+	if err := json.Unmarshal(resp.Body, &mergeRequests); err != nil {
 		return []MergeRequest{}, err
 	}
 

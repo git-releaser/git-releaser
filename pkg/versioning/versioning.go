@@ -8,7 +8,6 @@ import (
 	"github.com/git-releaser/git-releaser/pkg/manifest"
 	"github.com/git-releaser/git-releaser/pkg/versioning/conventional"
 	"github.com/git-releaser/git-releaser/pkg/versioning/simple"
-	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
 type IVersion interface {
@@ -16,7 +15,6 @@ type IVersion interface {
 	SetNextVersion() error
 	GetNextVersion() (semver.Version, bool)
 	GetVersions() config.Versions
-	GetHistory() []object.Commit
 }
 
 func NewVersion(cfg config.VersioningConfig) IVersion {

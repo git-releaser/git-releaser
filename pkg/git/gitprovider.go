@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-type GitConfig struct {
+type Config struct {
 	Provider           string
 	UserId             string
 	AccessToken        string
@@ -21,7 +21,7 @@ type GitConfig struct {
 	PropagationTargets []config.PropagationTarget
 	DryRun             bool
 }
-type GitProvider interface {
+type Provider interface {
 	CheckCreateBranch(baseBranch string, targetVersion string, prefix string) (string, error)
 	CheckCreateReleasePullRequest(source string, target string, versions config.Versions) error
 	CommitManifest(branchName string, content string, versions config.Versions, extraFiles []config.ExtraFileConfig) error
@@ -31,7 +31,7 @@ type GitProvider interface {
 	GetHighestRelease() (string, error)
 }
 
-func NewGitClient(gitconfig GitConfig) GitProvider {
+func NewGitClient(gitconfig Config) Provider {
 	if gitconfig.Provider == "" {
 		gitconfig.Provider = "github"
 	}
@@ -43,6 +43,10 @@ func NewGitClient(gitconfig GitConfig) GitProvider {
 		}
 
 		projectID, err := strconv.Atoi(gitconfig.AdditionalConfig["projectId"])
+		if err != nil {
+			log.Fatal("Could not convert ProjectID to int. Please check your configuration file.")
+		}
+
 		if err != nil {
 			log.Fatal(err)
 		}

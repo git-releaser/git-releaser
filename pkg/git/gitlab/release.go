@@ -36,23 +36,24 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 }
 
 func (g Client) CheckRelease(version config.Versions) (bool, error) {
-	req := GitLabRequest{
+	req := Request{
 		URL:    fmt.Sprintf("%s/projects/%d/repository/tags", g.ApiURL, g.ProjectID),
-		Method: "GET",
+		Method: http.MethodGet,
 	}
 
 	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		fmt.Println(req)
 		return false, fmt.Errorf("failed to fetch tags. Status code: %d", resp.StatusCode)
 	}
 
 	var tags []config.Tag
-	if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+	if err := json.Unmarshal(resp.Body, &tags); err != nil {
+		fmt.Println("Test")
 		return false, err
 	}
 
@@ -67,9 +68,9 @@ func (g Client) CheckRelease(version config.Versions) (bool, error) {
 
 func (g Client) createTag(project int, baseBranch string, version config.Versions, description string) error {
 	var err error
-	req := GitLabRequest{
+	req := Request{
 		URL:    fmt.Sprintf("%s/projects/%d/releases", g.ApiURL, project),
-		Method: "POST",
+		Method: http.MethodPost,
 	}
 
 	payload := map[string]interface{}{
@@ -95,7 +96,6 @@ func (g Client) createTag(project int, baseBranch string, version config.Version
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
 		return fmt.Errorf("failed to create release. Status code: %d", resp.StatusCode)

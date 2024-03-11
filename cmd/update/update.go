@@ -1,6 +1,7 @@
 /*
 Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 */
+
 package update
 
 import (
@@ -18,13 +19,8 @@ import (
 // UpdateCmd represents the update command
 var UpdateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Update the repository with the next version and create a release pull request",
+	Long:  `Update the repository with the next version and create a release pull request.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		additionalConfig := make(map[string]string)
 
@@ -43,7 +39,7 @@ to quickly create a Cobra application.`,
 			}
 		}
 
-		g := git.NewGitClient(git.GitConfig{
+		g := git.NewGitClient(git.Config{
 			Provider:           viper.GetString("provider"),
 			AccessToken:        viper.GetString("token"),
 			UserId:             viper.GetString("user_id"),

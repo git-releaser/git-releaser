@@ -3,6 +3,7 @@ package gitlab
 import (
 	"bytes"
 	"github.com/git-releaser/git-releaser/pkg/config"
+	"io"
 	"net/http"
 )
 
@@ -16,17 +17,22 @@ type Client struct {
 	DryRun             bool
 }
 
-type GitLabRequest struct {
+type Request struct {
 	Method  string
 	URL     string
 	Payload []byte
+}
+
+type Response struct {
+	StatusCode int
+	Body       []byte
 }
 
 func (g Client) GetHighestRelease() (string, error) {
 	return "", nil
 }
 
-func (g Client) gitLabRequest(request GitLabRequest) (*http.Response, error) {
+func (g Client) gitLabRequest(request Request) (Response, error) {
 	var req *http.Request
 	var err error
 
@@ -36,14 +42,14 @@ func (g Client) gitLabRequest(request GitLabRequest) (*http.Response, error) {
 
 	switch request.Method {
 	case "PUT", "POST":
-		req, err = http.NewRequest("PUT", request.URL, bytes.NewBuffer(request.Payload))
+		req, err = http.NewRequest(request.Method, request.URL, bytes.NewBuffer(request.Payload))
 		if err != nil {
-			return &http.Response{}, err
+			return Response{}, err
 		}
-	case "GET":
-		req, err = http.NewRequest("GET", request.URL, nil)
+	case "GET", "DELETE":
+		req, err = http.NewRequest(request.Method, request.URL, nil)
 		if err != nil {
-			return &http.Response{}, err
+			return Response{}, err
 		}
 	}
 
@@ -53,9 +59,16 @@ func (g Client) gitLabRequest(request GitLabRequest) (*http.Response, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return Response{}, err
 	}
+
+	// Read the body content into a byte slice
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return Response{StatusCode: resp.StatusCode}, err
+	}
+
 	defer resp.Body.Close()
 
-	return resp, err
+	return Response{StatusCode: resp.StatusCode, Body: bodyBytes}, err
 }
