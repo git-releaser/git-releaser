@@ -25,7 +25,7 @@ func (g Client) CheckCreateReleasePullRequest(source string, target string, vers
 		SourceBranch: source,
 		TargetBranch: target,
 		Title:        naming.GeneratePrTitle(versions.NextVersion.Original()),
-		Description:  naming.CreatePrDescription(versions.NextVersion.Original(), cl, g.PropagationTargets),
+		Description:  naming.CreatePrDescription(versions.NextVersion.Original(), cl, g.PropagationTargets, g.ConfigUpdates),
 		Labels:       []string{"release"},
 	}
 
@@ -52,7 +52,8 @@ func (g Client) CheckCreateReleasePullRequest(source string, target string, vers
 	return nil
 }
 
-func (g Client) checkCreateFileMergeRequest(source string, target string) error {
+func (g Client) CheckCreateFileMergeRequest(source string, target string) error {
+	fmt.Println("Checking if a pull request for the file update already exists")
 	// Check if a pull request with the same source and target branches already exists
 	existingPR, err := g.getMergeRequestBySourceAndTarget(source, target)
 	if err != nil {
@@ -63,17 +64,20 @@ func (g Client) checkCreateFileMergeRequest(source string, target string) error 
 		SourceBranch: source,
 		TargetBranch: target,
 		Title:        fmt.Sprintf("Updating %s to %s", source, target),
-		Labels:       []string{"release"},
+		Labels:       []string{"release-updates"},
 	}
 
+	fmt.Println("Checking if pull request already exists")
 	if existingPR.IID != 0 {
 		// If the pull request already exists, update its description
+		fmt.Println("Pull request already exists, will update it")
 		err := existingPR.Update(g)
 		if err != nil {
 			return err
 		}
 
 	} else {
+		fmt.Println("Pull request does not exist, will create it")
 		err := m.Create(g)
 		if err != nil {
 			return err

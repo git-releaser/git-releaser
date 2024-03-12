@@ -3,6 +3,7 @@ package gitlab
 import (
 	"bytes"
 	"github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/git/common"
 	"io"
 	"net/http"
 )
@@ -14,7 +15,9 @@ type Client struct {
 	ProjectID          int
 	ProjectURL         string
 	PropagationTargets []config.PropagationTarget
+	ConfigUpdates      []config.ConfigUpdate
 	DryRun             bool
+	GoGitConfig        common.GoGitRepository
 }
 
 type Request struct {

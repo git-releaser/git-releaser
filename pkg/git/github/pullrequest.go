@@ -31,7 +31,7 @@ func (g Client) createPullRequest(source string, target string, versions config.
 	cl := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
 	title := naming.GeneratePrTitle(versions.NextVersion.Original())
-	description := naming.CreatePrDescription(versions.NextVersion.Original(), cl, g.PropagationTargets)
+	description := naming.CreatePrDescription(versions.NextVersion.Original(), cl, g.PropagationTargets, g.ConfigUpdates)
 
 	newPR := &github.NewPullRequest{
 		Title: github.String(title),
@@ -83,6 +83,9 @@ func (g Client) createPullRequest(source string, target string, versions config.
 	return nil
 }
 
+func (g Client) CheckCreateFileMergeRequest(source string, target string) error {
+	return nil
+}
 func (g Client) getExistingPullRequestNumber(source, target string) (int, error) {
 	owner, repo := strings.Split(g.Repository, "/")[0], strings.Split(g.Repository, "/")[1]
 

@@ -9,11 +9,13 @@ import (
 	"fmt"
 	"github.com/git-releaser/git-releaser/pkg/config"
 	"github.com/git-releaser/git-releaser/pkg/git"
+	"github.com/git-releaser/git-releaser/pkg/git/common"
 	"github.com/git-releaser/git-releaser/pkg/helpers"
 	"github.com/git-releaser/git-releaser/pkg/versioning"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
+	"strconv"
 )
 
 // UpdateCmd represents the update command
@@ -48,6 +50,7 @@ var UpdateCmd = &cobra.Command{
 			AdditionalConfig:   additionalConfig,
 			PropagationTargets: conf.PropagationTargets,
 			DryRun:             viper.GetBool("dry-run"),
+			ConfigUpdates:      conf.ConfigUpdates,
 		})
 
 		if conf.TargetBranch == "" {
@@ -73,6 +76,39 @@ var UpdateCmd = &cobra.Command{
 			err = g.CreateRelease(conf.TargetBranch, versions, "")
 			if err != nil {
 				fmt.Println(err)
+			}
+
+			if len(conf.ConfigUpdates) > 0 {
+				for _, update := range conf.ConfigUpdates {
+					if update.ProjectId != 0 {
+						additionalConfig["projectId"] = strconv.Itoa(update.ProjectId)
+					}
+
+					r := git.NewGitClient(git.Config{
+						Provider:         viper.GetString("provider"),
+						AccessToken:      viper.GetString("token"),
+						UserId:           viper.GetString("user_id"),
+						ProjectUrl:       update.Repository,
+						ApiUrl:           viper.GetString("api_url"),
+						AdditionalConfig: additionalConfig,
+						DryRun:           viper.GetBool("dry-run"),
+					})
+
+					content, err := common.ReplaceTaggedLines(update.File, update.SearchTag, versions.CurrentVersion.String())
+					if err != nil {
+						fmt.Println(err)
+					}
+					fmt.Println(update)
+					err = r.CommitFile(fmt.Sprintf("release/replace-%s-%s", update.SearchTag, versions.CurrentVersion.String()), content, update.File)
+					if err != nil {
+						fmt.Println("Could not update the Repository: " + err.Error())
+					}
+
+					err = r.CheckCreateFileMergeRequest(fmt.Sprintf("release/replace-%s-%s", update.SearchTag, versions.CurrentVersion.String()), conf.TargetBranch)
+					if err != nil {
+						fmt.Println("Could not create the Merge Request: " + err.Error())
+					}
+				}
 			}
 			return
 		}

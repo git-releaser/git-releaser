@@ -1,57 +1,118 @@
-package file
+package common
 
 import (
 	"errors"
 	"fmt"
 	"github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/go-git/go-billy/v5/memfs"
+	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-git/v5"
 	gitconfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/storage/memory"
 	"os"
 	"path/filepath"
 	"regexp"
 	"time"
 )
 
-func CommitFile(branchName string, userid string, token string, fileName string, dryRun bool) error {
-	auth := &githttp.BasicAuth{
-		Username: userid,
-		Password: token,
+type GitUpdate struct {
+	BranchName      string
+	Content         string
+	Userid          string
+	Token           string
+	FileName        string
+	DryRun          bool
+	RepositoryUrl   string
+	GoGitRepository GoGitRepository
+}
+
+type GoGitRepository struct {
+	RepositoryUrl string
+	Auth          *githttp.BasicAuth
+	Repository    *git.Repository
+	Worktree      *git.Worktree
+}
+
+func (g *GoGitRepository) CheckoutBranch(target string) error {
+	var err error
+
+	g.Repository = &git.Repository{}
+	switch target {
+	case "plain":
+		fs := osfs.New(".")
+		g.Repository, err = git.PlainOpen(fs.Root())
+		if err != nil {
+			return err
+		}
+	case "temp":
+		storer := memory.NewStorage()
+		fs := memfs.New()
+
+		g.Repository, err = git.Clone(storer, fs, &git.CloneOptions{
+			URL:  g.RepositoryUrl,
+			Auth: g.Auth,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
-	repository, err := git.PlainOpen(".")
+	g.Worktree, err = g.Repository.Worktree()
 	if err != nil {
 		return err
 	}
 
-	worktree, err := repository.Worktree()
-	if err != nil {
-		return err
-	}
+	fmt.Println(g.Worktree.Filesystem.Root())
 
-	// Pull the latest changes from the remote repository
-	err = worktree.Pull(&git.PullOptions{
+	err = g.Worktree.Pull(&git.PullOptions{
 		RemoteName: "origin",
-		Auth:       auth,
+		Auth:       g.Auth,
 	})
 	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
 		fmt.Println("Could not pull the latest changes")
 		return err
 	}
+	return nil
+}
 
-	_, err = worktree.Add(fileName)
+func (g GoGitRepository) CommitFile(branchName string, content string, fileName string) error {
+	if g.Worktree == nil {
+		err := g.CheckoutBranch("temp")
+		if err != nil {
+			return err
+		}
+	}
+
+	_ = g.Worktree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", branchName)),
+		Create: true,
+	})
+
+	file, err := g.Worktree.Filesystem.Create(fileName)
 	if err != nil {
-		fmt.Println("Could not add file to git: " + filepath.Join(worktree.Filesystem.Root(), fileName))
+		fmt.Println("Could not create file: "+g.Worktree.Filesystem.Root(), fileName)
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write([]byte(content))
+	if err != nil {
+		fmt.Println("Could not write to file: "+g.Worktree.Filesystem.Root(), fileName)
+		return err
 	}
 
-	if dryRun {
-		fmt.Println("Dry run: would commit and push changes")
-		return nil
+	// Add the file to the worktree
+	_, err = g.Worktree.Add(fileName)
+	if err != nil {
+		fmt.Println("Could not add file to git: " + filepath.Join(g.Worktree.Filesystem.Root(), fileName))
+		return err
 	}
+
 	// Commit the changes
-	commit, err := worktree.Commit("releaser: update files", &git.CommitOptions{
+	commit, err := g.Worktree.Commit("releaser: update files", &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "git-releaser",
 			Email: "no-reply@git-releaser.com",
@@ -65,7 +126,7 @@ func CommitFile(branchName string, userid string, token string, fileName string,
 
 	// Update the branch reference to point to the new commit
 	refName := plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", branchName))
-	err = repository.Storer.SetReference(plumbing.NewHashReference(refName, commit))
+	err = g.Repository.Storer.SetReference(plumbing.NewHashReference(refName, commit))
 	if err != nil {
 		return err
 	}
@@ -75,56 +136,48 @@ func CommitFile(branchName string, userid string, token string, fileName string,
 		RefSpecs: []gitconfig.RefSpec{
 			gitconfig.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", branchName, branchName)),
 		},
-		Auth: auth,
+		Auth:  g.Auth,
+		Force: true,
 	}
 
 	// Push the changes to the remote repository
-	err = repository.Push(&options)
+	err = g.Repository.Push(&options)
 	if err != nil {
+		fmt.Println("Could not push the changes")
 		return err
 	}
 	return nil
 }
 
-func CommitManifest(branchName string, userid string, token string, content string, versions config.Versions, extraFiles []config.ExtraFileConfig, dryRun bool) error {
-	auth := &githttp.BasicAuth{
-		Username: userid,
-		Password: token,
+func (g GoGitRepository) CommitManifest(branchName string, content string, versions config.Versions, extraFiles []config.ExtraFileConfig, dryRun bool) error {
+	if g.Worktree == nil {
+		err := g.CheckoutBranch("plain")
+		if err != nil {
+			return err
+		}
 	}
 
 	filePath := ".git-releaser-manifest.json"
 
-	repository, err := git.PlainOpen(".")
-	if err != nil {
-		return err
-	}
-
-	worktree, err := repository.Worktree()
-	if err != nil {
-		return err
-	}
-
-	// Pull the latest changes from the remote repository
-	err = worktree.Pull(&git.PullOptions{
-		RemoteName: "origin",
-		Auth:       auth,
-	})
-	if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-		fmt.Println("Could not pull the latest changes")
-		return err
-	}
-
 	// Create or update the file in the worktree
-	err = os.WriteFile(filepath.Join(worktree.Filesystem.Root(), filePath), []byte(content), 0644)
+
+	file, err := g.Worktree.Filesystem.Create(filePath)
 	if err != nil {
-		fmt.Println("Could not write file: " + filepath.Join(worktree.Filesystem.Root(), filePath))
+		fmt.Println("Could not create file: "+g.Worktree.Filesystem.Root(), filePath)
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write([]byte(content))
+	if err != nil {
+		fmt.Println("Could not write to file: "+g.Worktree.Filesystem.Root(), filePath)
 		return err
 	}
 
 	// Add the file to the worktree
-	_, err = worktree.Add(filePath)
+	_, err = g.Worktree.Add(filePath)
 	if err != nil {
-		fmt.Println("Could not add file to git: " + filepath.Join(worktree.Filesystem.Root(), filePath))
+		fmt.Println("Could not add file to git: " + filepath.Join(g.Worktree.Filesystem.Root(), filePath))
 		return err
 	}
 
@@ -139,9 +192,9 @@ func CommitManifest(branchName string, userid string, token string, content stri
 			fmt.Println("Could not update version in file: " + extraFile.Path)
 		}
 
-		_, err = worktree.Add(extraFile.Path)
+		_, err = g.Worktree.Add(extraFile.Path)
 		if err != nil {
-			fmt.Println("Could not add file to git: " + filepath.Join(worktree.Filesystem.Root(), extraFile.Path))
+			fmt.Println("Could not add file to git: " + filepath.Join(g.Worktree.Filesystem.Root(), extraFile.Path))
 		}
 	}
 
@@ -150,7 +203,7 @@ func CommitManifest(branchName string, userid string, token string, content stri
 		return nil
 	}
 	// Commit the changes
-	commit, err := worktree.Commit("releaser: update files for version "+versions.NextVersion.Original(), &git.CommitOptions{
+	commit, err := g.Worktree.Commit("releaser: update files for version "+versions.NextVersion.Original(), &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "git-releaser",
 			Email: "no-reply@git-releaser.com",
@@ -164,7 +217,7 @@ func CommitManifest(branchName string, userid string, token string, content stri
 
 	// Update the branch reference to point to the new commit
 	refName := plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", branchName))
-	err = repository.Storer.SetReference(plumbing.NewHashReference(refName, commit))
+	err = g.Repository.Storer.SetReference(plumbing.NewHashReference(refName, commit))
 	if err != nil {
 		return err
 	}
@@ -174,56 +227,15 @@ func CommitManifest(branchName string, userid string, token string, content stri
 		RefSpecs: []gitconfig.RefSpec{
 			gitconfig.RefSpec(fmt.Sprintf("refs/heads/%s:refs/heads/%s", branchName, branchName)),
 		},
-		Auth: auth,
+		Auth:  g.Auth,
+		Force: true,
 	}
 
 	// Push the changes to the remote repository
-	err = repository.Push(&options)
+	err = g.Repository.Push(&options)
 	if err != nil {
-		// Fetch the latest changes from the remote repository
-		err = repository.Fetch(&git.FetchOptions{
-			RemoteName: "origin",
-			Auth:       auth,
-		})
-		if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-			fmt.Println("Could not fetch the latest changes")
-			return err
-		}
-
-		// Get the latest commit on the remote branch
-		remoteRef, err := repository.Reference(plumbing.ReferenceName(fmt.Sprintf("refs/remotes/origin/%s", branchName)), true)
-		if err != nil {
-			fmt.Println("Could not get the latest commit on the remote branch")
-			return err
-		}
-
-		// Rebase the local branch on top of the remote branch
-		err = worktree.Checkout(&git.CheckoutOptions{
-			Branch: plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", branchName)),
-			Create: false,
-		})
-		if err != nil {
-			fmt.Println("Could not checkout to the local branch")
-			return err
-		}
-
-		err = worktree.Reset(&git.ResetOptions{
-			Commit: remoteRef.Hash(),
-			Mode:   git.HardReset,
-		})
-		if err != nil {
-			fmt.Println("Could not rebase the local branch on top of the remote branch")
-			return err
-		}
-
-		options.Force = true
-
-		// Try to push the changes to the remote repository again
-		err = repository.Push(&options)
-		if err != nil && !errors.Is(err, git.NoErrAlreadyUpToDate) {
-			fmt.Println("Error while pushing: " + err.Error())
-			return err
-		}
+		fmt.Println("Could not push the changes")
+		return err
 	}
 
 	return nil
@@ -277,15 +289,13 @@ func replaceVersionBetweenTags(extraFile config.ExtraFileConfig, versions config
 	return nil
 }
 
-func ReplaceTaggedLines(filename string, sourceTag string, replaceTag string) error {
+func ReplaceTaggedLines(filename string, sourceTag string, replaceTag string) (string, error) {
 	// Read the contents of the file
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		fmt.Println("Could not read file: " + filename)
-		return err
+		return "", err
 	}
-
-	fmt.Println(sourceTag)
 
 	// Define a regular expression to match the version string with the annotation format
 	versionRegex := regexp.MustCompile(`(?m)(.*?)(\d+\.\d+\.\d+)(.*?)# x-git-releaser:` + sourceTag)
@@ -293,11 +303,5 @@ func ReplaceTaggedLines(filename string, sourceTag string, replaceTag string) er
 	// Replace all occurrences of the version in annotated lines with the new version
 	modifiedContent := versionRegex.ReplaceAllString(string(content), "${1}"+replaceTag+"${3}# x-git-releaser:"+sourceTag)
 
-	// Write the modified contents back to the file
-	err = os.WriteFile(filename, []byte(modifiedContent), 0644)
-	if err != nil {
-		fmt.Println("Could not write file: " + filename)
-		return err
-	}
-	return nil
+	return modifiedContent, nil
 }

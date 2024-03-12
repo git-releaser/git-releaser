@@ -12,6 +12,7 @@ type Config struct {
 	BranchPrefix       string              `yaml:"branch_prefix"`
 	Provider           string              `yaml:"provider"`
 	ExtraFiles         []ExtraFileConfig   `yaml:"extra_files"`
+	ConfigUpdates      []ConfigUpdate      `yaml:"config_updates"`
 	UserId             string              `yaml:"user_id"`
 	AccessToken        string              `yaml:"access_token"`
 	ProjectUrl         string              `yaml:"project_url"`
@@ -30,6 +31,12 @@ type VersioningConfig struct {
 	SimpleCommitTypes      SimpleCommitTypes `yaml:"simple_commit_types,omitempty"`
 }
 
+type ConfigUpdate struct {
+	ProjectId  int    `yaml:"project_id"`
+	SearchTag  string `yaml:"search_tag"`
+	Repository string `yaml:"repository"`
+	File       string `yaml:"file"`
+}
 type SimpleCommitTypes struct {
 	Patch        []string `yaml:"patch"`
 	Minor        []string `yaml:"minor"`

@@ -44,6 +44,11 @@ func TestParseConventionalCommits(t *testing.T) {
 			Message: "Updated dependencies",
 			ID:      "ghi789",
 		},
+		{
+			Type:    "other",
+			Message: "Updated dependencies",
+			ID:      "jkl123",
+		},
 	}
 
 	result := ParseCommits(commits)
