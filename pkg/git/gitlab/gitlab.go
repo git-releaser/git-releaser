@@ -31,6 +31,10 @@ type Response struct {
 	Body       []byte
 }
 
+func (g Client) ReplaceTaggedLines(filename string, sourceTag string, replaceTag string) (string, error) {
+	return g.GoGitConfig.ReplaceTaggedLines(filename, sourceTag, replaceTag)
+}
+
 func (g Client) gitLabRequest(request Request) (Response, error) {
 	var req *http.Request
 	var err error

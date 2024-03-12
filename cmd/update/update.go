@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"github.com/git-releaser/git-releaser/pkg/config"
 	"github.com/git-releaser/git-releaser/pkg/git"
-	"github.com/git-releaser/git-releaser/pkg/git/common"
 	"github.com/git-releaser/git-releaser/pkg/helpers"
 	"github.com/git-releaser/git-releaser/pkg/versioning"
 	"github.com/spf13/cobra"
@@ -94,7 +93,7 @@ var UpdateCmd = &cobra.Command{
 						DryRun:           viper.GetBool("dry-run"),
 					})
 
-					content, err := common.ReplaceTaggedLines(update.File, update.SearchTag, versions.CurrentVersion.String())
+					content, err := r.ReplaceTaggedLines(update.File, update.SearchTag, versions.CurrentVersion.String())
 					if err != nil {
 						fmt.Println(err)
 					}

@@ -22,6 +22,10 @@ type Client struct {
 	GoGitConfig        common.GoGitRepository
 }
 
+func (g Client) ReplaceTaggedLines(filename string, sourceTag string, replaceTag string) (string, error) {
+	return g.GoGitConfig.ReplaceTaggedLines(filename, sourceTag, replaceTag)
+}
+
 func NewClient(client Client) Client {
 	client.Context = context.Background()
 	ts := oauth2.StaticTokenSource(
