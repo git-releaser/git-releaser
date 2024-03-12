@@ -31,10 +31,6 @@ type Response struct {
 	Body       []byte
 }
 
-func (g Client) GetHighestRelease() (string, error) {
-	return "", nil
-}
-
 func (g Client) gitLabRequest(request Request) (Response, error) {
 	var req *http.Request
 	var err error

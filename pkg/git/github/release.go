@@ -16,7 +16,7 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 	if err != nil {
 		fmt.Println("github: could not get highest release")
 	}
-	commits, _ := g.GetCommitsSinceRelease(highestRelease)
+	commits, _ := g.GetCommitsSinceRelease(highestRelease.Original())
 	conventionalCommits := changelog.ParseCommits(commits)
 	cl := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
@@ -75,7 +75,7 @@ func (g Client) CheckRelease(version config.Versions) (bool, error) {
 	return false, nil
 }
 
-func (g Client) GetHighestRelease() (string, error) {
+func (g Client) GetHighestRelease() (semver.Version, error) {
 	var org string
 	var repo string
 
@@ -86,11 +86,11 @@ func (g Client) GetHighestRelease() (string, error) {
 
 	releases, _, err := g.GHClient.Repositories.ListReleases(g.Context, org, repo, nil)
 	if err != nil {
-		return "", err
+		return semver.Version{}, err
 	}
 
 	if len(releases) == 0 {
-		return "0.0.0", nil
+		return *semver.MustParse("0.0.0"), nil
 	}
 
 	versions := make([]*semver.Version, len(releases))
@@ -104,5 +104,5 @@ func (g Client) GetHighestRelease() (string, error) {
 
 	sort.Sort(semver.Collection(versions))
 
-	return versions[len(versions)-1].String(), nil
+	return *versions[len(versions)-1], nil
 }

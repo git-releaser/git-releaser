@@ -30,11 +30,6 @@ var ChangeLogCmd = &cobra.Command{
 			additionalConfig["projectId"] = fmt.Sprintf("%d", viper.GetInt("project_id"))
 		}
 
-		if viper.GetString("since_version") == "" {
-			fmt.Println("Please provide a version to compare to.")
-			os.Exit(1)
-		}
-
 		g := git.NewGitClient(git.Config{
 			Provider:         viper.GetString("provider"),
 			AccessToken:      viper.GetString("token"),
@@ -58,8 +53,9 @@ var ChangeLogCmd = &cobra.Command{
 		sinceVersion := viper.GetString("since_version")
 
 		if sinceVersion == "" {
-			sinceVersion, err = g.GetHighestRelease()
-			fmt.Println("sinceVersion: " + conf.Versioning.VersionPrefix + sinceVersion)
+			version, err := g.GetHighestRelease()
+			sinceVersion = version.Original()
+			fmt.Println("sinceVersion: " + sinceVersion)
 			if err != nil {
 				fmt.Println(err)
 			}

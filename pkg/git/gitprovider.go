@@ -2,6 +2,7 @@ package git
 
 import (
 	"fmt"
+	"github.com/Masterminds/semver"
 	"github.com/git-releaser/git-releaser/pkg/changelog"
 	"github.com/git-releaser/git-releaser/pkg/config"
 	"github.com/git-releaser/git-releaser/pkg/git/common"
@@ -33,7 +34,7 @@ type Provider interface {
 	CreateRelease(baseBranch string, version config.Versions, description string) error
 	CheckRelease(versions config.Versions) (bool, error)
 	GetCommitsSinceRelease(version string) ([]changelog.Commit, error)
-	GetHighestRelease() (string, error)
+	GetHighestRelease() (semver.Version, error)
 }
 
 func NewGitClient(gitconfig Config) Provider {
