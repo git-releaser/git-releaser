@@ -3,7 +3,6 @@ package conventional
 import (
 	"github.com/Masterminds/semver"
 	"github.com/git-releaser/git-releaser/pkg/config"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/thenativeweb/get-next-version/conventionalcommits"
 )
 
@@ -15,7 +14,7 @@ const (
 	Patch
 )
 
-type ConventionalCommitTypesResult struct {
+type CommitTypesResult struct {
 	ConventionalCommitTypes []conventionalcommits.Type
 }
 
@@ -46,9 +45,7 @@ func (v *Version) GetVersions() config.Versions {
 	return v.Versions
 }
 
-func (v *Version) GetHistory() []object.Commit { return v.Commits }
-
-func (v *Version) getConventionalCommitTypes() (ConventionalCommitTypesResult, error) {
+func (v *Version) getConventionalCommitTypes() (CommitTypesResult, error) {
 	conventionalCommitTypes := []conventionalcommits.Type{}
 
 	for _, commit := range v.Commits {
@@ -62,7 +59,7 @@ func (v *Version) getConventionalCommitTypes() (ConventionalCommitTypesResult, e
 		)
 	}
 
-	return ConventionalCommitTypesResult{
+	return CommitTypesResult{
 		ConventionalCommitTypes: conventionalCommitTypes,
 	}, nil
 }

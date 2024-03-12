@@ -1,6 +1,7 @@
 /*
 Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 */
+
 package update
 
 import (
@@ -8,23 +9,20 @@ import (
 	"fmt"
 	"github.com/git-releaser/git-releaser/pkg/config"
 	"github.com/git-releaser/git-releaser/pkg/git"
+	"github.com/git-releaser/git-releaser/pkg/git/common"
 	"github.com/git-releaser/git-releaser/pkg/helpers"
 	"github.com/git-releaser/git-releaser/pkg/versioning"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
+	"strconv"
 )
 
 // UpdateCmd represents the update command
 var UpdateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Update the repository with the next version and create a release pull request",
+	Long:  `Update the repository with the next version and create a release pull request.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		additionalConfig := make(map[string]string)
 
@@ -43,7 +41,7 @@ to quickly create a Cobra application.`,
 			}
 		}
 
-		g := git.NewGitClient(git.GitConfig{
+		g := git.NewGitClient(git.Config{
 			Provider:           viper.GetString("provider"),
 			AccessToken:        viper.GetString("token"),
 			UserId:             viper.GetString("user_id"),
@@ -52,6 +50,7 @@ to quickly create a Cobra application.`,
 			AdditionalConfig:   additionalConfig,
 			PropagationTargets: conf.PropagationTargets,
 			DryRun:             viper.GetBool("dry-run"),
+			ConfigUpdates:      conf.ConfigUpdates,
 		})
 
 		if conf.TargetBranch == "" {
@@ -77,6 +76,39 @@ to quickly create a Cobra application.`,
 			err = g.CreateRelease(conf.TargetBranch, versions, "")
 			if err != nil {
 				fmt.Println(err)
+			}
+
+			if len(conf.ConfigUpdates) > 0 {
+				for _, update := range conf.ConfigUpdates {
+					if update.ProjectId != 0 {
+						additionalConfig["projectId"] = strconv.Itoa(update.ProjectId)
+					}
+
+					r := git.NewGitClient(git.Config{
+						Provider:         viper.GetString("provider"),
+						AccessToken:      viper.GetString("token"),
+						UserId:           viper.GetString("user_id"),
+						ProjectUrl:       update.Repository,
+						ApiUrl:           viper.GetString("api_url"),
+						AdditionalConfig: additionalConfig,
+						DryRun:           viper.GetBool("dry-run"),
+					})
+
+					content, err := common.ReplaceTaggedLines(update.File, update.SearchTag, versions.CurrentVersion.String())
+					if err != nil {
+						fmt.Println(err)
+					}
+					fmt.Println(update)
+					err = r.CommitFile(fmt.Sprintf("release/replace-%s-%s", update.SearchTag, versions.CurrentVersion.String()), content, update.File)
+					if err != nil {
+						fmt.Println("Could not update the Repository: " + err.Error())
+					}
+
+					err = r.CheckCreateFileMergeRequest(fmt.Sprintf("release/replace-%s-%s", update.SearchTag, versions.CurrentVersion.String()), conf.TargetBranch)
+					if err != nil {
+						fmt.Println("Could not create the Merge Request: " + err.Error())
+					}
+				}
 			}
 			return
 		}

@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/git/common"
 	"github.com/google/go-github/v33/github"
 	"golang.org/x/oauth2"
 )
@@ -16,7 +17,9 @@ type Client struct {
 	ApiURL             string
 	GHClient           *github.Client
 	PropagationTargets []config.PropagationTarget
+	ConfigUpdates      []config.ConfigUpdate
 	DryRun             bool
+	GoGitConfig        common.GoGitRepository
 }
 
 func NewClient(client Client) Client {

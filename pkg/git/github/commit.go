@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/git-releaser/git-releaser/pkg/changelog"
 	releaserconfig "github.com/git-releaser/git-releaser/pkg/config"
-	"github.com/git-releaser/git-releaser/pkg/file"
 	"strings"
 	"time"
 
@@ -12,7 +11,12 @@ import (
 )
 
 func (g Client) CommitManifest(branchName string, content string, versions releaserconfig.Versions, extraFiles []releaserconfig.ExtraFileConfig) error {
-	err := file.CommitManifest(branchName, g.UserId, g.AccessToken, content, versions, extraFiles, g.DryRun)
+	err := g.GoGitConfig.CommitManifest(branchName, content, versions, extraFiles, g.DryRun)
+	return err
+}
+
+func (g Client) CommitFile(branchName string, content string, fileName string) error {
+	err := g.GoGitConfig.CommitFile(branchName, content, fileName)
 	return err
 }
 

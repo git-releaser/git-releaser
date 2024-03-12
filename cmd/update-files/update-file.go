@@ -7,7 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/git-releaser/git-releaser/pkg/config"
-	"github.com/git-releaser/git-releaser/pkg/file"
+	"github.com/git-releaser/git-releaser/pkg/git"
+	"github.com/git-releaser/git-releaser/pkg/git/common"
 	"github.com/git-releaser/git-releaser/pkg/helpers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -44,15 +45,38 @@ var UpdateFilesCmd = &cobra.Command{
 		replaceString := viper.GetString("replace-string")
 		filePath := viper.GetString("file")
 
-		err = file.ReplaceTaggedLines(filePath, searchString, replaceString)
+		g := git.NewGitClient(git.Config{
+			Provider:           viper.GetString("provider"),
+			AccessToken:        viper.GetString("token"),
+			UserId:             viper.GetString("user_id"),
+			ProjectUrl:         viper.GetString("project_url"),
+			ApiUrl:             viper.GetString("api_url"),
+			AdditionalConfig:   additionalConfig,
+			PropagationTargets: conf.PropagationTargets,
+			DryRun:             viper.GetBool("dry-run"),
+		})
+
+		content, err := common.ReplaceTaggedLines(filePath, searchString, replaceString)
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		err = file.CommitFile(fmt.Sprintf("release/replace-%s-%s", searchString, replaceString), viper.GetString("user_id"), viper.GetString("token"), filePath, viper.GetBool("dry-run"))
+		err = g.CommitFile(fmt.Sprintf("release/replace-%s-%s", searchString, replaceString), content, filePath)
 		if err != nil {
 			fmt.Println(err)
 		}
+
+		if conf.TargetBranch == "" {
+			conf.TargetBranch = "main"
+		}
+
+		fmt.Println("Creating merge request")
+		fmt.Println(viper.GetString("provider"))
+		err = g.CheckCreateFileMergeRequest(fmt.Sprintf("release/replace-%s-%s", searchString, replaceString), conf.TargetBranch)
+		if err != nil {
+			fmt.Println(err)
+		}
+
 	},
 }
 

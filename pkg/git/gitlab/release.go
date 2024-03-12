@@ -3,10 +3,20 @@ package gitlab
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Masterminds/semver"
+	"github.com/git-releaser/git-releaser/pkg/changelog"
 	"github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/naming"
 	"net/http"
 	"strconv"
 )
+
+type Release struct {
+	ID          int    `json:"id"`
+	TagName     string `json:"tag_name"`
+	Description string `json:"description"`
+	Version     *semver.Version
+}
 
 func (g Client) CreateRelease(baseBranch string, version config.Versions, description string) error {
 	err := g.createTag(g.ProjectID, baseBranch, version, description)
@@ -36,23 +46,24 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 }
 
 func (g Client) CheckRelease(version config.Versions) (bool, error) {
-	req := GitLabRequest{
+	req := Request{
 		URL:    fmt.Sprintf("%s/projects/%d/repository/tags", g.ApiURL, g.ProjectID),
-		Method: "GET",
+		Method: http.MethodGet,
 	}
 
 	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		fmt.Println(req)
 		return false, fmt.Errorf("failed to fetch tags. Status code: %d", resp.StatusCode)
 	}
 
 	var tags []config.Tag
-	if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+	if err := json.Unmarshal(resp.Body, &tags); err != nil {
+		fmt.Println("Test")
 		return false, err
 	}
 
@@ -67,9 +78,21 @@ func (g Client) CheckRelease(version config.Versions) (bool, error) {
 
 func (g Client) createTag(project int, baseBranch string, version config.Versions, description string) error {
 	var err error
-	req := GitLabRequest{
+	req := Request{
 		URL:    fmt.Sprintf("%s/projects/%d/releases", g.ApiURL, project),
-		Method: "POST",
+		Method: http.MethodPost,
+	}
+
+	highestRelease, err := g.GetHighestRelease()
+	if err != nil {
+		fmt.Println("github: could not get highest release")
+	}
+	commits, _ := g.GetCommitsSinceRelease(highestRelease.Original())
+	conventionalCommits := changelog.ParseCommits(commits)
+	cl := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
+
+	if description == "" {
+		description = naming.CreateReleaseDescription(version.CurrentVersion.Original(), cl)
 	}
 
 	payload := map[string]interface{}{
@@ -95,7 +118,6 @@ func (g Client) createTag(project int, baseBranch string, version config.Version
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
 		return fmt.Errorf("failed to create release. Status code: %d", resp.StatusCode)
@@ -103,4 +125,48 @@ func (g Client) createTag(project int, baseBranch string, version config.Version
 
 	fmt.Println("Release created successfully (" + req.URL + ")")
 	return nil
+}
+
+func (g Client) GetHighestRelease() (semver.Version, error) {
+	// Make a request to the GitLab API to fetch all releases for the project
+	req := Request{
+		URL:    fmt.Sprintf("%s/projects/%d/releases", g.ApiURL, g.ProjectID),
+		Method: "GET",
+	}
+
+	resp, err := g.gitLabRequest(req)
+	if err != nil {
+		return semver.Version{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return semver.Version{}, fmt.Errorf("failed to fetch releases. Status code: %d", resp.StatusCode)
+	}
+
+	// Parse the response to get a list of releases
+	var releases []Release
+	if err := json.Unmarshal(resp.Body, &releases); err != nil {
+		return semver.Version{}, err
+	}
+
+	// If there are no releases, return "0.0.0"
+	if len(releases) == 0 {
+		return *semver.MustParse("0.0.0"), nil
+	}
+
+	fmt.Println(releases)
+
+	thisVersion := semver.MustParse("0.0.0")
+
+	for _, release := range releases {
+		ver := semver.MustParse(release.TagName)
+		fmt.Println(ver)
+		fmt.Println(thisVersion)
+		if ver.GreaterThan(thisVersion) {
+			thisVersion = ver
+		}
+	}
+
+	// Return the version number of the highest release
+	return *thisVersion, nil
 }
