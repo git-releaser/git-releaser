@@ -1,7 +1,6 @@
 package git
 
 import (
-	"fmt"
 	"github.com/Masterminds/semver"
 	"github.com/git-releaser/git-releaser/pkg/changelog"
 	"github.com/git-releaser/git-releaser/pkg/config"
@@ -81,7 +80,6 @@ func NewGitClient(gitconfig Config) Provider {
 			gitconfig.ApiUrl = "https://api.github.com"
 		}
 
-		fmt.Println(gitconfig.UserId)
 		return github.NewClient(github.Client{
 			UserId:             gitconfig.UserId,
 			AccessToken:        gitconfig.AccessToken,

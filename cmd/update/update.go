@@ -98,7 +98,7 @@ var UpdateCmd = &cobra.Command{
 					if err != nil {
 						fmt.Println(err)
 					}
-					fmt.Println(update)
+
 					err = r.CommitFile(fmt.Sprintf("release/replace-%s-%s", update.SearchTag, versions.CurrentVersion.String()), content, update.File)
 					if err != nil {
 						fmt.Println("Could not update the Repository: " + err.Error())

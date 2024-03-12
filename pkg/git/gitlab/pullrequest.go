@@ -31,7 +31,9 @@ func (g Client) CheckCreateReleasePullRequest(source string, target string, vers
 
 	if existingPR.IID != 0 {
 		// If the pull request already exists, update its description
-		err := existingPR.Update(g)
+		m.ID = existingPR.ID
+		m.IID = existingPR.IID
+		err := m.Update(g)
 		if err != nil {
 			return err
 		}
@@ -115,7 +117,7 @@ func (m MergeRequest) Close(g Client) error {
 	var err error
 	req := Request{
 		URL:    fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, m.IID),
-		Method: "PUT",
+		Method: http.MethodPut,
 	}
 
 	payload := map[string]interface{}{
@@ -143,7 +145,8 @@ func (m MergeRequest) Create(g Client) error {
 	var err error
 
 	req := Request{
-		URL: fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID),
+		URL:    fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID),
+		Method: http.MethodPost,
 	}
 
 	payload := map[string]interface{}{
@@ -158,8 +161,6 @@ func (m MergeRequest) Create(g Client) error {
 	if err != nil {
 		return err
 	}
-
-	req.Method = "POST"
 
 	resp, err := g.gitLabRequest(req)
 	if err != nil {
@@ -179,7 +180,8 @@ func (m MergeRequest) Update(g Client) error {
 	var err error
 
 	req := Request{
-		URL: fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, m.IID),
+		URL:    fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, m.IID),
+		Method: http.MethodPut,
 	}
 
 	payload := map[string]interface{}{
@@ -194,8 +196,6 @@ func (m MergeRequest) Update(g Client) error {
 	if err != nil {
 		return err
 	}
-
-	req.Method = "PUT"
 
 	resp, err := g.gitLabRequest(req)
 	if err != nil {
