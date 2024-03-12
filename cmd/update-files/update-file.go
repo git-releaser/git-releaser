@@ -55,12 +55,12 @@ var UpdateFilesCmd = &cobra.Command{
 			DryRun:             viper.GetBool("dry-run"),
 		})
 
-		content, err := g.ReplaceTaggedLines(filePath, searchString, replaceString)
+		changeset, err := g.ReplaceTaggedLines([]string{filePath}, searchString, replaceString)
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		err = g.CommitFile(fmt.Sprintf("release/replace-%s-%s", searchString, replaceString), content, filePath)
+		err = g.CommitFile(fmt.Sprintf("release/replace-%s-%s", searchString, replaceString), changeset)
 		if err != nil {
 			fmt.Println(err)
 		}

@@ -32,10 +32,10 @@ type VersioningConfig struct {
 }
 
 type ConfigUpdate struct {
-	ProjectId  int    `yaml:"project_id"`
-	SearchTag  string `yaml:"search_tag"`
-	Repository string `yaml:"repository"`
-	File       string `yaml:"file"`
+	ProjectId  int      `yaml:"project_id"`
+	SearchTag  string   `yaml:"search_tag"`
+	Repository string   `yaml:"repository"`
+	Files      []string `yaml:"files"`
 }
 type SimpleCommitTypes struct {
 	Patch        []string `yaml:"patch"`

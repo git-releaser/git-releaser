@@ -29,12 +29,12 @@ type Provider interface {
 	CheckCreateReleasePullRequest(source string, target string, versions config.Versions) error
 	CheckCreateFileMergeRequest(source string, target string) error
 	CommitManifest(branchName string, content string, versions config.Versions, extraFiles []config.ExtraFileConfig) error
-	CommitFile(branchName string, content string, fileName string) error
+	CommitFile(branchName string, changeset []common.ChangeSet) error
 	CreateRelease(baseBranch string, version config.Versions, description string) error
 	CheckRelease(versions config.Versions) (bool, error)
 	GetCommitsSinceRelease(version string) ([]changelog.Commit, error)
 	GetHighestRelease() (semver.Version, error)
-	ReplaceTaggedLines(filename string, sourceTag string, replaceTag string) (string, error)
+	ReplaceTaggedLines(filenames []string, sourceTag string, replaceTag string) ([]common.ChangeSet, error)
 }
 
 func NewGitClient(gitconfig Config) Provider {

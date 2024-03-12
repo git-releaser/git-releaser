@@ -22,8 +22,8 @@ type Client struct {
 	GoGitConfig        common.GoGitRepository
 }
 
-func (g Client) ReplaceTaggedLines(filename string, sourceTag string, replaceTag string) (string, error) {
-	return g.GoGitConfig.ReplaceTaggedLines(filename, sourceTag, replaceTag)
+func (g Client) ReplaceTaggedLines(filenames []string, sourceTag string, replaceTag string) ([]common.ChangeSet, error) {
+	return g.GoGitConfig.ReplaceTaggedLines(filenames, sourceTag, replaceTag)
 }
 
 func NewClient(client Client) Client {
