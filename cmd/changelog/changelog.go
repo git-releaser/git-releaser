@@ -68,6 +68,7 @@ var ChangeLogCmd = &cobra.Command{
 		conventionalCommits := changelog.ParseCommits(commits)
 		log := changelog.GenerateChangelog(conventionalCommits, viper.GetString("project_url"))
 		fmt.Println("Last Version: " + viper.GetString("since_version"))
+		fmt.Println("\nChanges since last version: ")
 		fmt.Println(log)
 	},
 }

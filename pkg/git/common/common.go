@@ -65,8 +65,6 @@ func (g *GoGitRepository) CheckoutBranch(target string) error {
 		return err
 	}
 
-	fmt.Println(g.Worktree.Filesystem.Root())
-
 	err = g.Worktree.Pull(&git.PullOptions{
 		RemoteName: "origin",
 		Auth:       g.Auth,

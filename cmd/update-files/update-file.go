@@ -71,7 +71,6 @@ var UpdateFilesCmd = &cobra.Command{
 		}
 
 		fmt.Println("Creating merge request")
-		fmt.Println(viper.GetString("provider"))
 		err = g.CheckCreateFileMergeRequest(fmt.Sprintf("release/replace-%s-%s", searchString, replaceString), conf.TargetBranch)
 		if err != nil {
 			fmt.Println(err)

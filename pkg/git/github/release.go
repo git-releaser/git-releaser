@@ -54,7 +54,6 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 func parseOwnerRepoFromURL(url string) (string, string) {
 	// Assuming URL is of the form "https://github.com/owner/repo"
 	parts := strings.Split(url, "/")
-	fmt.Println(url)
 	return parts[len(parts)-2], parts[len(parts)-1]
 }
 

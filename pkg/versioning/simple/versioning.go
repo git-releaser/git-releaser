@@ -53,13 +53,10 @@ func (v *Version) calculateNextVersion(changeTypes []ChangeType) (semver.Version
 
 	switch currentlyDetectedChange {
 	case Patch:
-		fmt.Println(currentlyDetectedChange)
 		return v.CurrentVersion.IncPatch(), true
 	case Minor:
-		fmt.Println(currentlyDetectedChange)
 		return v.CurrentVersion.IncMinor(), true
 	case Major:
-		fmt.Println(currentlyDetectedChange)
 		return v.CurrentVersion.IncMajor(), true
 	default:
 		if v.Versions.Config.SimpleCommitTypes.DefaultPatch {
@@ -73,7 +70,6 @@ func (v *Version) getChangeTypes() []ChangeType {
 	changeTypes := []ChangeType{}
 
 	for _, commit := range v.Commits {
-		fmt.Println(commit.Message)
 		for _, prefix := range v.Config.SimpleCommitTypes.Major {
 			if strings.HasPrefix(commit.Message, prefix) {
 				changeTypes = append(changeTypes, Major)

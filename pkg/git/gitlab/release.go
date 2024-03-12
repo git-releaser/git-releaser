@@ -57,13 +57,11 @@ func (g Client) CheckRelease(version config.Versions) (bool, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		fmt.Println(req)
 		return false, fmt.Errorf("failed to fetch tags. Status code: %d", resp.StatusCode)
 	}
 
 	var tags []config.Tag
 	if err := json.Unmarshal(resp.Body, &tags); err != nil {
-		fmt.Println("Test")
 		return false, err
 	}
 
@@ -154,14 +152,11 @@ func (g Client) GetHighestRelease() (semver.Version, error) {
 		return *semver.MustParse("0.0.0"), nil
 	}
 
-	fmt.Println(releases)
-
 	thisVersion := semver.MustParse("0.0.0")
 
 	for _, release := range releases {
 		ver := semver.MustParse(release.TagName)
-		fmt.Println(ver)
-		fmt.Println(thisVersion)
+
 		if ver.GreaterThan(thisVersion) {
 			thisVersion = ver
 		}

@@ -31,7 +31,9 @@ func (g Client) CheckCreateReleasePullRequest(source string, target string, vers
 
 	if existingPR.IID != 0 {
 		// If the pull request already exists, update its description
-		err := existingPR.Update(g)
+		m.ID = existingPR.ID
+		m.IID = existingPR.IID
+		err := m.Update(g)
 		if err != nil {
 			return err
 		}
@@ -179,7 +181,8 @@ func (m MergeRequest) Update(g Client) error {
 	var err error
 
 	req := Request{
-		URL: fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, m.IID),
+		URL:    fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, m.IID),
+		Method: "PUT",
 	}
 
 	payload := map[string]interface{}{
@@ -201,6 +204,8 @@ func (m MergeRequest) Update(g Client) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Println(string(resp.Body))
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to create/update pull request. Status code: %d, Body: %s", resp.StatusCode, resp.Body)
