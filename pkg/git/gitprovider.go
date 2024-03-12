@@ -34,6 +34,7 @@ type Provider interface {
 	CheckRelease(versions config.Versions) (bool, error)
 	GetCommitsSinceRelease(version string) ([]changelog.Commit, error)
 	GetHighestRelease() (semver.Version, error)
+	ReplaceTaggedLines(filename string, sourceTag string, replaceTag string) (string, error)
 }
 
 func NewGitClient(gitconfig Config) Provider {

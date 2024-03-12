@@ -12,22 +12,12 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"time"
 )
-
-type GitUpdate struct {
-	BranchName      string
-	Content         string
-	Userid          string
-	Token           string
-	FileName        string
-	DryRun          bool
-	RepositoryUrl   string
-	GoGitRepository GoGitRepository
-}
 
 type GoGitRepository struct {
 	RepositoryUrl string
@@ -78,7 +68,7 @@ func (g *GoGitRepository) CheckoutBranch(target string) error {
 
 func (g GoGitRepository) CommitFile(branchName string, content string, fileName string) error {
 	if g.Worktree == nil {
-		err := g.CheckoutBranch("temp")
+		err := g.CheckoutBranch(" ")
 		if err != nil {
 			return err
 		}
@@ -287,9 +277,16 @@ func replaceVersionBetweenTags(extraFile config.ExtraFileConfig, versions config
 	return nil
 }
 
-func ReplaceTaggedLines(filename string, sourceTag string, replaceTag string) (string, error) {
-	// Read the contents of the file
-	content, err := os.ReadFile(filename)
+func (g GoGitRepository) ReplaceTaggedLines(filename string, sourceTag string, replaceTag string) (string, error) {
+
+	file, err := g.Worktree.Filesystem.Open(filename)
+	if err != nil {
+		fmt.Println("Could not open file: " + filename)
+		return "", err
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
 	if err != nil {
 		fmt.Println("Could not read file: " + filename)
 		return "", err
