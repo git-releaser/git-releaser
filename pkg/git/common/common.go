@@ -68,11 +68,14 @@ func (g *GoGitRepository) CheckoutBranch(target string) error {
 
 func (g GoGitRepository) CommitFile(branchName string, content string, fileName string) error {
 	if g.Worktree == nil {
-		err := g.CheckoutBranch(" ")
+		err := g.CheckoutBranch("temp")
 		if err != nil {
+			fmt.Println("Could not checkout branch")
 			return err
 		}
 	}
+
+	fmt.Println(g.Worktree)
 
 	_ = g.Worktree.Checkout(&git.CheckoutOptions{
 		Branch: plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", branchName)),
@@ -278,6 +281,12 @@ func replaceVersionBetweenTags(extraFile config.ExtraFileConfig, versions config
 }
 
 func (g GoGitRepository) ReplaceTaggedLines(filename string, sourceTag string, replaceTag string) (string, error) {
+	if g.Worktree == nil {
+		err := g.CheckoutBranch("temp")
+		if err != nil {
+			return "", err
+		}
+	}
 
 	file, err := g.Worktree.Filesystem.Open(filename)
 	if err != nil {
@@ -297,6 +306,8 @@ func (g GoGitRepository) ReplaceTaggedLines(filename string, sourceTag string, r
 
 	// Replace all occurrences of the version in annotated lines with the new version
 	modifiedContent := versionRegex.ReplaceAllString(string(content), "${1}"+replaceTag+"${3}# x-git-releaser:"+sourceTag)
+
+	fmt.Println("Modified content: ", modifiedContent)
 
 	return modifiedContent, nil
 }
