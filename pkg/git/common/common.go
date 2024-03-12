@@ -288,8 +288,6 @@ func (g GoGitRepository) ReplaceTaggedLines(filename string, sourceTag string, r
 		}
 	}
 
-	fmt.Println(g.Worktree)
-
 	file, err := g.Worktree.Filesystem.Open(filename)
 	if err != nil {
 		fmt.Println("Could not open file: " + filename)
