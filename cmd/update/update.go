@@ -93,12 +93,12 @@ var UpdateCmd = &cobra.Command{
 						DryRun:           viper.GetBool("dry-run"),
 					})
 
-					content, err := r.ReplaceTaggedLines(update.File, update.SearchTag, versions.CurrentVersion.String())
+					changeset, err := r.ReplaceTaggedLines(update.Files, update.SearchTag, versions.CurrentVersion.String())
 					if err != nil {
 						fmt.Println(err)
 					}
 
-					err = r.CommitFile(fmt.Sprintf("release/replace-%s-%s", update.SearchTag, versions.CurrentVersion.String()), content, update.File)
+					err = r.CommitFile(fmt.Sprintf("release/replace-%s-%s", update.SearchTag, versions.CurrentVersion.String()), changeset)
 					if err != nil {
 						fmt.Println("Could not update the Repository: " + err.Error())
 					}

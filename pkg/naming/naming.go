@@ -28,7 +28,10 @@ func CreatePrDescription(version string, changelog string, propagationTargets []
 	if len(configUpdates) > 0 {
 		description += "\n\n## Configuration Updates\n\n"
 		for _, update := range configUpdates {
-			description += fmt.Sprintf("- %s - %s\n", update.Repository, update.File)
+			description += fmt.Sprintf("%s - %s\n", update.Repository, update.SearchTag)
+			for _, updateFile := range update.Files {
+				description += fmt.Sprintf("-- %s\n", updateFile)
+			}
 		}
 	}
 

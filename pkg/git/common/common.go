@@ -26,6 +26,11 @@ type GoGitRepository struct {
 	Worktree      *git.Worktree
 }
 
+type ChangeSet struct {
+	fileName string
+	content  string
+}
+
 func (g *GoGitRepository) CheckoutBranch(target string) error {
 	var err error
 
@@ -66,7 +71,7 @@ func (g *GoGitRepository) CheckoutBranch(target string) error {
 	return nil
 }
 
-func (g GoGitRepository) CommitFile(branchName string, content string, fileName string) error {
+func (g GoGitRepository) CommitFile(branchName string, changeset []ChangeSet) error {
 	if g.Worktree == nil {
 		err := g.CheckoutBranch("temp")
 		if err != nil {
@@ -82,24 +87,27 @@ func (g GoGitRepository) CommitFile(branchName string, content string, fileName 
 		Create: true,
 	})
 
-	file, err := g.Worktree.Filesystem.Create(fileName)
-	if err != nil {
-		fmt.Println("Could not create file: "+g.Worktree.Filesystem.Root(), fileName)
-		return err
-	}
-	defer file.Close()
+	for _, change := range changeset {
 
-	_, err = file.Write([]byte(content))
-	if err != nil {
-		fmt.Println("Could not write to file: "+g.Worktree.Filesystem.Root(), fileName)
-		return err
-	}
+		file, err := g.Worktree.Filesystem.Create(change.fileName)
+		if err != nil {
+			fmt.Println("Could not create file: "+g.Worktree.Filesystem.Root(), change.fileName)
+			continue
+		}
+		defer file.Close()
 
-	// Add the file to the worktree
-	_, err = g.Worktree.Add(fileName)
-	if err != nil {
-		fmt.Println("Could not add file to git: " + filepath.Join(g.Worktree.Filesystem.Root(), fileName))
-		return err
+		_, err = file.Write([]byte(change.content))
+		if err != nil {
+			fmt.Println("Could not write to file: "+g.Worktree.Filesystem.Root(), change.fileName)
+			continue
+		}
+
+		// Add the file to the worktree
+		_, err = g.Worktree.Add(change.fileName)
+		if err != nil {
+			fmt.Println("Could not add file to git: " + filepath.Join(g.Worktree.Filesystem.Root(), change.fileName))
+			continue
+		}
 	}
 
 	// Commit the changes
@@ -280,34 +288,36 @@ func replaceVersionBetweenTags(extraFile config.ExtraFileConfig, versions config
 	return nil
 }
 
-func (g GoGitRepository) ReplaceTaggedLines(filename string, sourceTag string, replaceTag string) (string, error) {
+func (g GoGitRepository) ReplaceTaggedLines(filenames []string, sourceTag string, replaceTag string) ([]ChangeSet, error) {
+	var changes []ChangeSet
+
 	if g.Worktree == nil {
 		err := g.CheckoutBranch("temp")
 		if err != nil {
-			return "", err
+			return []ChangeSet{}, err
 		}
 	}
 
-	file, err := g.Worktree.Filesystem.Open(filename)
-	if err != nil {
-		fmt.Println("Could not open file: " + filename)
-		return "", err
+	for _, filename := range filenames {
+		file, err := g.Worktree.Filesystem.Open(filename)
+		if err != nil {
+			fmt.Println("Could not open file: " + filename)
+		}
+		defer file.Close()
+
+		content, err := io.ReadAll(file)
+		if err != nil {
+			fmt.Println("Could not read file: " + filename)
+		}
+
+		// Define a regular expression to match the version string with the annotation format
+		versionRegex := regexp.MustCompile(`(?m)(.*?)(\d+\.\d+\.\d+)(.*?)# x-git-releaser:` + sourceTag)
+
+		// Replace all occurrences of the version in annotated lines with the new version
+		modifiedContent := versionRegex.ReplaceAllString(string(content), "${1}"+replaceTag+"${3}# x-git-releaser:"+sourceTag)
+
+		changes = append(changes, ChangeSet{fileName: filename, content: modifiedContent})
 	}
-	defer file.Close()
 
-	content, err := io.ReadAll(file)
-	if err != nil {
-		fmt.Println("Could not read file: " + filename)
-		return "", err
-	}
-
-	// Define a regular expression to match the version string with the annotation format
-	versionRegex := regexp.MustCompile(`(?m)(.*?)(\d+\.\d+\.\d+)(.*?)# x-git-releaser:` + sourceTag)
-
-	// Replace all occurrences of the version in annotated lines with the new version
-	modifiedContent := versionRegex.ReplaceAllString(string(content), "${1}"+replaceTag+"${3}# x-git-releaser:"+sourceTag)
-
-	fmt.Println("Modified content: ", modifiedContent)
-
-	return modifiedContent, nil
+	return changes, nil
 }
