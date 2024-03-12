@@ -117,7 +117,7 @@ func (m MergeRequest) Close(g Client) error {
 	var err error
 	req := Request{
 		URL:    fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, m.IID),
-		Method: "PUT",
+		Method: http.MethodPut,
 	}
 
 	payload := map[string]interface{}{
@@ -145,7 +145,8 @@ func (m MergeRequest) Create(g Client) error {
 	var err error
 
 	req := Request{
-		URL: fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID),
+		URL:    fmt.Sprintf("%s/projects/%d/merge_requests", g.ApiURL, g.ProjectID),
+		Method: http.MethodPost,
 	}
 
 	payload := map[string]interface{}{
@@ -160,8 +161,6 @@ func (m MergeRequest) Create(g Client) error {
 	if err != nil {
 		return err
 	}
-
-	req.Method = "POST"
 
 	resp, err := g.gitLabRequest(req)
 	if err != nil {
@@ -182,7 +181,7 @@ func (m MergeRequest) Update(g Client) error {
 
 	req := Request{
 		URL:    fmt.Sprintf("%s/projects/%d/merge_requests/%d", g.ApiURL, g.ProjectID, m.IID),
-		Method: "PUT",
+		Method: http.MethodPut,
 	}
 
 	payload := map[string]interface{}{
@@ -198,14 +197,10 @@ func (m MergeRequest) Update(g Client) error {
 		return err
 	}
 
-	req.Method = "PUT"
-
 	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return err
 	}
-
-	fmt.Println(string(resp.Body))
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to create/update pull request. Status code: %d, Body: %s", resp.StatusCode, resp.Body)
