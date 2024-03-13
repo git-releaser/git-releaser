@@ -71,17 +71,17 @@ func (v *Version) getChangeTypes() []ChangeType {
 
 	for _, commit := range v.Commits {
 		for _, prefix := range v.Config.SimpleCommitTypes.Major {
-			if strings.HasPrefix(commit.Message, prefix) {
+			if strings.HasPrefix(strings.ToLower(commit.Message), strings.ToLower(prefix)) {
 				changeTypes = append(changeTypes, Major)
 			}
 		}
 		for _, prefix := range v.Config.SimpleCommitTypes.Minor {
-			if strings.HasPrefix(commit.Message, prefix) {
+			if strings.HasPrefix(strings.ToLower(commit.Message), strings.ToLower(prefix)) {
 				changeTypes = append(changeTypes, Minor)
 			}
 		}
 		for _, prefix := range v.Config.SimpleCommitTypes.Patch {
-			if strings.HasPrefix(commit.Message, prefix) {
+			if strings.HasPrefix(strings.ToLower(commit.Message), strings.ToLower(prefix)) {
 				changeTypes = append(changeTypes, Patch)
 			}
 		}
