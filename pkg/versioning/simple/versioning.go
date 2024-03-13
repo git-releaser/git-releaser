@@ -3,8 +3,7 @@ package simple
 import (
 	"fmt"
 	"github.com/Masterminds/semver"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/thschue/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/config"
 	"strings"
 )
 
@@ -54,13 +53,10 @@ func (v *Version) calculateNextVersion(changeTypes []ChangeType) (semver.Version
 
 	switch currentlyDetectedChange {
 	case Patch:
-		fmt.Println(currentlyDetectedChange)
 		return v.CurrentVersion.IncPatch(), true
 	case Minor:
-		fmt.Println(currentlyDetectedChange)
 		return v.CurrentVersion.IncMinor(), true
 	case Major:
-		fmt.Println(currentlyDetectedChange)
 		return v.CurrentVersion.IncMajor(), true
 	default:
 		if v.Versions.Config.SimpleCommitTypes.DefaultPatch {
@@ -74,19 +70,18 @@ func (v *Version) getChangeTypes() []ChangeType {
 	changeTypes := []ChangeType{}
 
 	for _, commit := range v.Commits {
-		fmt.Println(commit.Message)
 		for _, prefix := range v.Config.SimpleCommitTypes.Major {
-			if strings.HasPrefix(commit.Message, prefix) {
+			if strings.HasPrefix(strings.ToLower(commit.Message), strings.ToLower(prefix)) {
 				changeTypes = append(changeTypes, Major)
 			}
 		}
 		for _, prefix := range v.Config.SimpleCommitTypes.Minor {
-			if strings.HasPrefix(commit.Message, prefix) {
+			if strings.HasPrefix(strings.ToLower(commit.Message), strings.ToLower(prefix)) {
 				changeTypes = append(changeTypes, Minor)
 			}
 		}
 		for _, prefix := range v.Config.SimpleCommitTypes.Patch {
-			if strings.HasPrefix(commit.Message, prefix) {
+			if strings.HasPrefix(strings.ToLower(commit.Message), strings.ToLower(prefix)) {
 				changeTypes = append(changeTypes, Patch)
 			}
 		}
@@ -98,5 +93,3 @@ func (v *Version) getChangeTypes() []ChangeType {
 func (v *Version) GetVersions() config.Versions {
 	return v.Versions
 }
-
-func (v *Version) GetHistory() []object.Commit { return v.Commits }

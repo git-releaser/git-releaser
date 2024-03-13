@@ -44,9 +44,14 @@ func TestParseConventionalCommits(t *testing.T) {
 			Message: "Updated dependencies",
 			ID:      "ghi789",
 		},
+		{
+			Type:    "other",
+			Message: "Updated dependencies",
+			ID:      "jkl123",
+		},
 	}
 
-	result := ParseConventionalCommits(commits)
+	result := ParseCommits(commits)
 
 	if len(result) != len(expected) {
 		t.Errorf("Expected length: %d, got: %d", len(expected), len(result))

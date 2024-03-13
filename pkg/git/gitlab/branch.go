@@ -1,15 +1,15 @@
 package gitlab
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
+	"github.com/git-releaser/git-releaser/pkg/naming"
 	"net/http"
 )
 
-func (g Client) CheckCreateBranch(baseBranch string, version string) (string, error) {
-	branchName := fmt.Sprintf("release-%s", version)
+func (g Client) CheckCreateBranch(baseBranch string, version string, prefix string) (string, error) {
+	branchName := naming.CreateBranchName(prefix, version)
+
 	branchExists, _ := g.branchExists(branchName)
 	if !branchExists {
 		err := g.createBranch(baseBranch, branchName)
@@ -20,21 +20,15 @@ func (g Client) CheckCreateBranch(baseBranch string, version string) (string, er
 	return branchName, nil
 }
 func (g Client) branchExists(branchName string) (bool, error) {
-	url := fmt.Sprintf("%s/projects/%d/repository/branches/%s", g.ApiURL, g.ProjectID, branchName)
+	req := Request{
+		URL:    fmt.Sprintf("%s/projects/%d/repository/branches/%s", g.ApiURL, g.ProjectID, branchName),
+		Method: http.MethodGet,
+	}
 
-	req, err := http.NewRequest("GET", url, nil)
+	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return false, err
 	}
-
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return false, err
-	}
-	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
@@ -50,41 +44,34 @@ func (g Client) branchExists(branchName string) (bool, error) {
 }
 
 func (g Client) createBranch(baseBranch string, branchName string) error {
-	url := fmt.Sprintf("%s/projects/%d/repository/branches", g.ApiURL, g.ProjectID)
+	var err error
+	req := Request{
+		URL:    fmt.Sprintf("%s/projects/%d/repository/branches", g.ApiURL, g.ProjectID),
+		Method: http.MethodPost,
+	}
 
 	payload := map[string]interface{}{
 		"branch": branchName,
 		"ref":    baseBranch,
 	}
 
-	jsonPayload, err := json.Marshal(payload)
+	req.Payload, err = json.Marshal(payload)
 	if err != nil {
 		return err
 	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
 
 	if g.DryRun {
 		fmt.Printf("Dry run: Branch '%s' would be created.\n", branchName)
 		return nil
 	}
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to create branch. Status code: %d, Body: %s", resp.StatusCode, body)
+		return fmt.Errorf("failed to create branch. Status code: %d, Body: %s", resp.StatusCode, resp.Body)
 	}
 
 	fmt.Printf("Branch '%s' created successfully.\n", branchName)
@@ -92,25 +79,18 @@ func (g Client) createBranch(baseBranch string, branchName string) error {
 }
 
 func (g Client) deleteBranch(branchName string) error {
-	url := fmt.Sprintf("%s/projects/%d/repository/branches/%s", g.ApiURL, g.ProjectID, branchName)
+	req := Request{
+		URL:    fmt.Sprintf("%s/projects/%d/repository/branches/%s", g.ApiURL, g.ProjectID, branchName),
+		Method: http.MethodDelete,
+	}
 
-	req, err := http.NewRequest("DELETE", url, nil)
+	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return err
 	}
-
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to delete branch. Status code: %d, Body: %s", resp.StatusCode, body)
+		return fmt.Errorf("failed to delete branch. Status code: %d, Body: %s", resp.StatusCode, resp.Body)
 	}
 
 	fmt.Printf("Branch '%s' deleted successfully.\n", branchName)

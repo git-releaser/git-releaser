@@ -6,24 +6,19 @@ package changelog
 import (
 	"errors"
 	"fmt"
+	"github.com/git-releaser/git-releaser/pkg/changelog"
+	"github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/git"
+	"github.com/git-releaser/git-releaser/pkg/helpers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/thschue/git-releaser/pkg/changelog"
-	"github.com/thschue/git-releaser/pkg/config"
-	"github.com/thschue/git-releaser/pkg/git"
-	"github.com/thschue/git-releaser/pkg/helpers"
 	"os"
 )
 
 var ChangeLogCmd = &cobra.Command{
 	Use:   "changelog",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Test the creation of a changelog",
+	Long:  `This command will create a changelog based on the commits since the specified release.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		additionalConfig := make(map[string]string)
 
@@ -35,7 +30,7 @@ to quickly create a Cobra application.`,
 			additionalConfig["projectId"] = fmt.Sprintf("%d", viper.GetInt("project_id"))
 		}
 
-		g := git.NewGitClient(git.GitConfig{
+		g := git.NewGitClient(git.Config{
 			Provider:         viper.GetString("provider"),
 			AccessToken:      viper.GetString("token"),
 			UserId:           viper.GetString("user_id"),
@@ -58,8 +53,9 @@ to quickly create a Cobra application.`,
 		sinceVersion := viper.GetString("since_version")
 
 		if sinceVersion == "" {
-			sinceVersion, err = g.GetHighestRelease()
-			fmt.Println("sinceVersion: " + conf.Versioning.VersionPrefix + sinceVersion)
+			version, err := g.GetHighestRelease()
+			sinceVersion = version.Original()
+			fmt.Println("sinceVersion: " + sinceVersion)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -69,9 +65,10 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			fmt.Println(err)
 		}
-		conventionalCommits := changelog.ParseConventionalCommits(commits)
+		conventionalCommits := changelog.ParseCommits(commits)
 		log := changelog.GenerateChangelog(conventionalCommits, viper.GetString("project_url"))
 		fmt.Println("Last Version: " + viper.GetString("since_version"))
+		fmt.Println("\nChanges since last version: ")
 		fmt.Println(log)
 	},
 }

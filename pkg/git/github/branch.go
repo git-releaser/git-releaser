@@ -2,12 +2,13 @@ package github
 
 import (
 	"fmt"
+	"github.com/git-releaser/git-releaser/pkg/naming"
 	"github.com/google/go-github/v33/github"
 	"strings"
 )
 
-func (g Client) CheckCreateBranch(baseBranch string, version string) (string, error) {
-	branchName := fmt.Sprintf("release-%s", version)
+func (g Client) CheckCreateBranch(baseBranch string, version string, prefix string) (string, error) {
+	branchName := naming.CreateBranchName(prefix, version)
 	branchExists, _ := g.branchExists(branchName)
 	if !branchExists {
 		err := g.createBranch(baseBranch, branchName)

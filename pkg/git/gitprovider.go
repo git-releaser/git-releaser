@@ -1,72 +1,95 @@
 package git
 
 import (
-	"fmt"
-	"github.com/thschue/git-releaser/pkg/changelog"
-	"github.com/thschue/git-releaser/pkg/config"
-	"github.com/thschue/git-releaser/pkg/git/github"
-	"github.com/thschue/git-releaser/pkg/git/gitlab"
+	"github.com/Masterminds/semver"
+	"github.com/git-releaser/git-releaser/pkg/changelog"
+	"github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/git/common"
+	"github.com/git-releaser/git-releaser/pkg/git/github"
+	"github.com/git-releaser/git-releaser/pkg/git/gitlab"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"log"
 	"strconv"
 	"strings"
 )
 
-type GitConfig struct {
-	Provider         string
-	UserId           string
-	AccessToken      string
-	ProjectUrl       string
-	ApiUrl           string
-	AdditionalConfig map[string]string
-	DryRun           bool
+type Config struct {
+	Provider           string
+	UserId             string
+	AccessToken        string
+	ProjectUrl         string
+	ApiUrl             string
+	AdditionalConfig   map[string]string
+	PropagationTargets []config.PropagationTarget
+	ConfigUpdates      []config.ConfigUpdate
+	DryRun             bool
 }
-type GitProvider interface {
-	CheckCreateBranch(baseBranch string, targetVersion string) (string, error)
-	CheckCreatePullRequest(source string, target string, versions config.Versions) error
+type Provider interface {
+	CheckCreateBranch(baseBranch string, targetVersion string, prefix string) (string, error)
+	CheckCreateReleasePullRequest(source string, target string, versions config.Versions) error
+	CheckCreateFileMergeRequest(source string, target string) error
 	CommitManifest(branchName string, content string, versions config.Versions, extraFiles []config.ExtraFileConfig) error
+	CommitFile(branchName string, changeset []common.ChangeSet) error
 	CreateRelease(baseBranch string, version config.Versions, description string) error
 	CheckRelease(versions config.Versions) (bool, error)
 	GetCommitsSinceRelease(version string) ([]changelog.Commit, error)
-	GetHighestRelease() (string, error)
+	GetHighestRelease() (semver.Version, error)
+	ReplaceTaggedLines(filenames []string, sourceTag string, replaceTag string) ([]common.ChangeSet, error)
 }
 
-func NewGitClient(config GitConfig) GitProvider {
-	if config.Provider == "" {
-		config.Provider = "github"
+func NewGitClient(gitconfig Config) Provider {
+	if gitconfig.Provider == "" {
+		gitconfig.Provider = "github"
 	}
 
-	switch strings.ToLower(config.Provider) {
+	goGitConfig := common.GoGitRepository{
+		RepositoryUrl: gitconfig.ProjectUrl,
+		Auth: &githttp.BasicAuth{
+			Username: gitconfig.UserId,
+			Password: gitconfig.AccessToken,
+		},
+	}
+
+	switch strings.ToLower(gitconfig.Provider) {
 	case "gitlab":
-		if config.ApiUrl == "" {
-			config.ApiUrl = "https://gitlab.com/api/v4"
+		if gitconfig.ApiUrl == "" {
+			gitconfig.ApiUrl = "https://gitlab.com/api/v4"
 		}
 
-		projectID, err := strconv.Atoi(config.AdditionalConfig["projectId"])
+		projectID, err := strconv.Atoi(gitconfig.AdditionalConfig["projectId"])
+		if err != nil {
+			log.Fatal("Could not convert ProjectID to int. Please check your configuration file.")
+		}
+
 		if err != nil {
 			log.Fatal(err)
 		}
 		return &gitlab.Client{
-			UserId:      config.UserId,
-			AccessToken: config.AccessToken,
-			ApiURL:      config.ApiUrl,
-			ProjectID:   projectID,
-			ProjectURL:  config.ProjectUrl,
-			DryRun:      config.DryRun,
+			UserId:             gitconfig.UserId,
+			AccessToken:        gitconfig.AccessToken,
+			ApiURL:             gitconfig.ApiUrl,
+			ProjectID:          projectID,
+			ProjectURL:         gitconfig.ProjectUrl,
+			PropagationTargets: gitconfig.PropagationTargets,
+			GoGitConfig:        goGitConfig,
+			ConfigUpdates:      gitconfig.ConfigUpdates,
+			DryRun:             gitconfig.DryRun,
 		}
 
 	case "github":
-		if config.ApiUrl == "" {
-			config.ApiUrl = "https://api.github.com"
+		if gitconfig.ApiUrl == "" {
+			gitconfig.ApiUrl = "https://api.github.com"
 		}
 
-		fmt.Println(config.UserId)
 		return github.NewClient(github.Client{
-			UserId:      config.UserId,
-			AccessToken: config.AccessToken,
-			ProjectURL:  config.ProjectUrl,
-			Repository:  config.AdditionalConfig["repository"],
-			ApiURL:      config.ApiUrl,
-			DryRun:      config.DryRun,
+			UserId:             gitconfig.UserId,
+			AccessToken:        gitconfig.AccessToken,
+			ProjectURL:         gitconfig.ProjectUrl,
+			Repository:         gitconfig.AdditionalConfig["repository"],
+			ApiURL:             gitconfig.ApiUrl,
+			PropagationTargets: gitconfig.PropagationTargets,
+			GoGitConfig:        goGitConfig,
+			DryRun:             gitconfig.DryRun,
 		})
 	}
 	return nil

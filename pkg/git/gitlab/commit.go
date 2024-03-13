@@ -3,28 +3,25 @@ package gitlab
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/thschue/git-releaser/pkg/changelog"
-	releaserconfig "github.com/thschue/git-releaser/pkg/config"
-	"github.com/thschue/git-releaser/pkg/file"
+	"github.com/git-releaser/git-releaser/pkg/changelog"
+	releaserconfig "github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/git/common"
 	"net/http"
 	"net/url"
 )
 
-// ConventionalCommit represents a conventional commit structure
-type ConventionalCommit struct {
-	Type    string `json:"type"`
-	Scope   string `json:"scope"`
-	Message string `json:"message"`
-	ID      string `json:"id"`
+func (g Client) CommitManifest(branchName string, content string, versions releaserconfig.Versions, extraFiles []releaserconfig.ExtraFileConfig) error {
+	err := g.GoGitConfig.CommitManifest(branchName, content, versions, extraFiles, g.DryRun)
+	return err
 }
 
-func (g Client) CommitManifest(branchName string, content string, versions releaserconfig.Versions, extraFiles []releaserconfig.ExtraFileConfig) error {
-	err := file.CommitManifest(branchName, g.UserId, g.AccessToken, content, versions, extraFiles, g.DryRun)
+func (g Client) CommitFile(branchName string, changeset []common.ChangeSet) error {
+	err := g.GoGitConfig.CommitFile(branchName, changeset)
 	return err
 }
 
 func (g Client) GetCommitsSinceRelease(sinceRelease string) ([]changelog.Commit, error) {
-	var giturl string
+	var req Request
 	var tagDate string
 	var err error
 
@@ -36,32 +33,22 @@ func (g Client) GetCommitsSinceRelease(sinceRelease string) ([]changelog.Commit,
 	}
 
 	if tagDate == "" {
-		giturl = fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/commits", g.ProjectID)
+		req.URL = fmt.Sprintf("%s/projects/%d/repository/commits", g.ApiURL, g.ProjectID)
 	} else {
-		giturl = fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/commits?since=%s", g.ProjectID, tagDate)
-		fmt.Println(giturl)
+		req.URL = fmt.Sprintf("%s/projects/%d/repository/commits?since=%s", g.ApiURL, g.ProjectID, tagDate)
 	}
 
-	req, err := http.NewRequest("GET", giturl, nil)
+	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return nil, err
 	}
-
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to get commits. Status code: %d", resp.StatusCode)
 	}
 
 	var commits []changelog.Commit
-	if err := json.NewDecoder(resp.Body).Decode(&commits); err != nil {
+	if err := json.Unmarshal(resp.Body, &commits); err != nil {
 		return nil, err
 	}
 
@@ -69,24 +56,16 @@ func (g Client) GetCommitsSinceRelease(sinceRelease string) ([]changelog.Commit,
 }
 
 func (g Client) getTagCommitDate(tag string) (string, error) {
-	tagUrl := fmt.Sprintf("https://gitlab.com/api/v4/projects/%d/repository/tags/%s", g.ProjectID, url.PathEscape(tag))
-	fmt.Println(tagUrl)
-	tagReq, err := http.NewRequest("GET", tagUrl, nil)
+	req := Request{
+		URL: fmt.Sprintf("%s/projects/%d/repository/tags/%s", g.ApiURL, g.ProjectID, url.PathEscape(tag)),
+	}
+	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return "", err
 	}
 
-	tagReq.Header.Set("PRIVATE-TOKEN", g.AccessToken)
-
-	client := &http.Client{}
-	tagResp, err := client.Do(tagReq)
-	if err != nil {
-		return "", err
-	}
-	defer tagResp.Body.Close()
-
-	if tagResp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to get tag details. Status code: %d", tagResp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to get tag details. Status code: %d", resp.StatusCode)
 	}
 
 	var tagDetails struct {
@@ -94,7 +73,7 @@ func (g Client) getTagCommitDate(tag string) (string, error) {
 			CommittedDate string `json:"created_at"`
 		} `json:"commit"`
 	}
-	if err := json.NewDecoder(tagResp.Body).Decode(&tagDetails); err != nil {
+	if err := json.Unmarshal(resp.Body, &tagDetails); err != nil {
 		return "", err
 	}
 	return tagDetails.Commit.CommittedDate, nil

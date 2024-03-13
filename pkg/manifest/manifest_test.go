@@ -2,7 +2,7 @@ package manifest
 
 import (
 	"github.com/Masterminds/semver"
-	"github.com/thschue/git-releaser/pkg/naming"
+	"github.com/git-releaser/git-releaser/pkg/naming"
 	"os"
 	"testing"
 )

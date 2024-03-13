@@ -3,10 +3,10 @@ package github
 import (
 	"fmt"
 	"github.com/Masterminds/semver"
+	"github.com/git-releaser/git-releaser/pkg/changelog"
+	"github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/naming"
 	"github.com/google/go-github/v33/github"
-	"github.com/thschue/git-releaser/pkg/changelog"
-	"github.com/thschue/git-releaser/pkg/config"
-	"github.com/thschue/git-releaser/pkg/naming"
 	"sort"
 	"strings"
 )
@@ -16,8 +16,8 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 	if err != nil {
 		fmt.Println("github: could not get highest release")
 	}
-	commits, _ := g.GetCommitsSinceRelease(highestRelease)
-	conventionalCommits := changelog.ParseConventionalCommits(commits)
+	commits, _ := g.GetCommitsSinceRelease(highestRelease.Original())
+	conventionalCommits := changelog.ParseCommits(commits)
 	cl := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
 	if description == "" {
@@ -54,7 +54,6 @@ func (g Client) CreateRelease(baseBranch string, version config.Versions, descri
 func parseOwnerRepoFromURL(url string) (string, string) {
 	// Assuming URL is of the form "https://github.com/owner/repo"
 	parts := strings.Split(url, "/")
-	fmt.Println(url)
 	return parts[len(parts)-2], parts[len(parts)-1]
 }
 
@@ -75,7 +74,7 @@ func (g Client) CheckRelease(version config.Versions) (bool, error) {
 	return false, nil
 }
 
-func (g Client) GetHighestRelease() (string, error) {
+func (g Client) GetHighestRelease() (semver.Version, error) {
 	var org string
 	var repo string
 
@@ -86,11 +85,11 @@ func (g Client) GetHighestRelease() (string, error) {
 
 	releases, _, err := g.GHClient.Repositories.ListReleases(g.Context, org, repo, nil)
 	if err != nil {
-		return "", err
+		return semver.Version{}, err
 	}
 
 	if len(releases) == 0 {
-		return "0.0.0", nil
+		return *semver.MustParse("0.0.0"), nil
 	}
 
 	versions := make([]*semver.Version, len(releases))
@@ -104,5 +103,5 @@ func (g Client) GetHighestRelease() (string, error) {
 
 	sort.Sort(semver.Collection(versions))
 
-	return versions[len(versions)-1].String(), nil
+	return *versions[len(versions)-1], nil
 }

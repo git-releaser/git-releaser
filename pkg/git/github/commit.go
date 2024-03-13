@@ -2,9 +2,9 @@ package github
 
 import (
 	"fmt"
-	"github.com/thschue/git-releaser/pkg/changelog"
-	releaserconfig "github.com/thschue/git-releaser/pkg/config"
-	"github.com/thschue/git-releaser/pkg/file"
+	"github.com/git-releaser/git-releaser/pkg/changelog"
+	releaserconfig "github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/git/common"
 	"strings"
 	"time"
 
@@ -12,7 +12,12 @@ import (
 )
 
 func (g Client) CommitManifest(branchName string, content string, versions releaserconfig.Versions, extraFiles []releaserconfig.ExtraFileConfig) error {
-	err := file.CommitManifest(branchName, g.UserId, g.AccessToken, content, versions, extraFiles, g.DryRun)
+	err := g.GoGitConfig.CommitManifest(branchName, content, versions, extraFiles, g.DryRun)
+	return err
+}
+
+func (g Client) CommitFile(branchName string, changeset []common.ChangeSet) error {
+	err := g.GoGitConfig.CommitFile(branchName, changeset)
 	return err
 }
 

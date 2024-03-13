@@ -6,9 +6,9 @@ package initialize
 import (
 	"errors"
 	"fmt"
+	"github.com/git-releaser/git-releaser/pkg/helpers"
+	"github.com/git-releaser/git-releaser/pkg/naming"
 	"github.com/spf13/viper"
-	"github.com/thschue/git-releaser/pkg/helpers"
-	"github.com/thschue/git-releaser/pkg/naming"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -19,13 +19,9 @@ const ReleaseManifestFilename = ".git-releaser-manifest.json"
 // initializeCmd represents the initialize command
 var InitializeCmd = &cobra.Command{
 	Use:   "initialize",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Initializes the git-releaser configuration",
+	Long: `Initializes the git-releaser configuration by creating a .git-releaser-manifest.json file and
+			a .git-releaser.yaml file if they do not exist.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if _, err := os.Stat(ReleaseManifestFilename); errors.Is(err, os.ErrNotExist) {
 			version := "0.0.0"

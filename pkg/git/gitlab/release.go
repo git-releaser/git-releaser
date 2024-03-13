@@ -1,93 +1,67 @@
 package gitlab
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/thschue/git-releaser/pkg/config"
+	"github.com/Masterminds/semver"
+	"github.com/git-releaser/git-releaser/pkg/changelog"
+	"github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/naming"
 	"net/http"
+	"strconv"
 )
 
 type Release struct {
+	ID          int    `json:"id"`
 	TagName     string `json:"tag_name"`
 	Description string `json:"description"`
-}
-
-type Tag struct {
-	Name   string `json:"name"`
-	Commit struct {
-		ID string `json:"id"`
-	} `json:"commit"`
+	Version     *semver.Version
 }
 
 func (g Client) CreateRelease(baseBranch string, version config.Versions, description string) error {
-	url := fmt.Sprintf("%s/projects/%d/releases", g.ApiURL, g.ProjectID)
-
-	payload := map[string]interface{}{
-		"tag_name":    version.CurrentVersion.Original(),
-		"ref":         baseBranch,
-		"description": description,
-	}
-
-	jsonPayload, err := json.Marshal(payload)
+	err := g.createTag(g.ProjectID, baseBranch, version, description)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
-	if err != nil {
-		return err
+	if len(g.PropagationTargets) > 0 {
+		fmt.Println("Propagating release to other repositories...")
+		for _, target := range g.PropagationTargets {
+			if target.TargetBranch == "" {
+				target.TargetBranch = baseBranch
+			}
+
+			projectId, err := strconv.Atoi(target.Target)
+			if err != nil {
+				return err
+			}
+
+			err = g.createTag(projectId, target.TargetBranch, version, description)
+			if err != nil {
+				return err
+			}
+		}
 	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
-
-	if g.DryRun {
-		fmt.Println("Dry run: would create release with the following data:")
-		fmt.Printf("Tag name: %s\n", version.CurrentVersion.Original())
-		fmt.Printf("Ref: %s\n", baseBranch)
-		fmt.Printf("Description: %s\n", description)
-		return nil
-	}
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("failed to create release. Status code: %d", resp.StatusCode)
-	}
-
-	fmt.Println("Release created successfully.")
 	return nil
 }
 
 func (g Client) CheckRelease(version config.Versions) (bool, error) {
-	url := fmt.Sprintf("%s/projects/%d/repository/tags", g.ApiURL, g.ProjectID)
+	req := Request{
+		URL:    fmt.Sprintf("%s/projects/%d/repository/tags", g.ApiURL, g.ProjectID),
+		Method: http.MethodGet,
+	}
 
-	req, err := http.NewRequest("GET", url, nil)
+	resp, err := g.gitLabRequest(req)
 	if err != nil {
 		return false, err
 	}
-
-	req.Header.Set("PRIVATE-TOKEN", g.AccessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return false, err
-	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return false, fmt.Errorf("failed to fetch tags. Status code: %d", resp.StatusCode)
 	}
 
-	var tags []Tag
-	if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+	var tags []config.Tag
+	if err := json.Unmarshal(resp.Body, &tags); err != nil {
 		return false, err
 	}
 
@@ -98,4 +72,96 @@ func (g Client) CheckRelease(version config.Versions) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+func (g Client) createTag(project int, baseBranch string, version config.Versions, description string) error {
+	var err error
+	req := Request{
+		URL:    fmt.Sprintf("%s/projects/%d/releases", g.ApiURL, project),
+		Method: http.MethodPost,
+	}
+
+	highestRelease, err := g.GetHighestRelease()
+	if err != nil {
+		fmt.Println("github: could not get highest release")
+	}
+	commits, _ := g.GetCommitsSinceRelease(highestRelease.Original())
+	conventionalCommits := changelog.ParseCommits(commits)
+	cl := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
+
+	if description == "" {
+		description = naming.CreateReleaseDescription(version.CurrentVersion.Original(), cl)
+	}
+
+	payload := map[string]interface{}{
+		"tag_name":    version.CurrentVersion.Original(),
+		"ref":         baseBranch,
+		"description": description,
+	}
+
+	req.Payload, err = json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	if g.DryRun {
+		fmt.Println("Dry run: would create release with the following data:")
+		fmt.Printf("Tag name: %s\n", version.CurrentVersion.Original())
+		fmt.Printf("Ref: %s\n", baseBranch)
+		fmt.Printf("Description: %s\n", description)
+		return nil
+	}
+
+	resp, err := g.gitLabRequest(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("failed to create release. Status code: %d", resp.StatusCode)
+	}
+
+	fmt.Println("Release created successfully (" + req.URL + ")")
+	return nil
+}
+
+func (g Client) GetHighestRelease() (semver.Version, error) {
+	// Make a request to the GitLab API to fetch all releases for the project
+	req := Request{
+		URL:    fmt.Sprintf("%s/projects/%d/releases", g.ApiURL, g.ProjectID),
+		Method: "GET",
+	}
+
+	resp, err := g.gitLabRequest(req)
+	if err != nil {
+		return semver.Version{}, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return semver.Version{}, fmt.Errorf("failed to fetch releases. Status code: %d", resp.StatusCode)
+	}
+
+	// Parse the response to get a list of releases
+	var releases []Release
+	if err := json.Unmarshal(resp.Body, &releases); err != nil {
+		return semver.Version{}, err
+	}
+
+	// If there are no releases, return "0.0.0"
+	if len(releases) == 0 {
+		return *semver.MustParse("0.0.0"), nil
+	}
+
+	thisVersion := semver.MustParse("0.0.0")
+
+	for _, release := range releases {
+		ver := semver.MustParse(release.TagName)
+
+		if ver.GreaterThan(thisVersion) {
+			thisVersion = ver
+		}
+	}
+
+	// Return the version number of the highest release
+	return *thisVersion, nil
 }

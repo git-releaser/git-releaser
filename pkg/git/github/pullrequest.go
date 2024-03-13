@@ -2,23 +2,14 @@ package github
 
 import (
 	"fmt"
+	"github.com/git-releaser/git-releaser/pkg/changelog"
+	"github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/naming"
 	"github.com/google/go-github/v33/github"
-	"github.com/thschue/git-releaser/pkg/changelog"
-	"github.com/thschue/git-releaser/pkg/config"
-	"github.com/thschue/git-releaser/pkg/naming"
 	"strings"
 )
 
-type PullRequest struct {
-	ID           int    `json:"id"`
-	Number       int    `json:"number"`
-	Title        string `json:"title"`
-	State        string `json:"state"`
-	SourceBranch string `json:"head_ref"`
-	TargetBranch string `json:"base_ref"`
-}
-
-func (g Client) CheckCreatePullRequest(source string, target string, versions config.Versions) error {
+func (g Client) CheckCreateReleasePullRequest(source string, target string, versions config.Versions) error {
 	err := g.createPullRequest(source, target, versions)
 	if err != nil {
 		return err
@@ -36,11 +27,11 @@ func (g Client) createPullRequest(source string, target string, versions config.
 	}
 
 	commits, _ := g.GetCommitsSinceRelease(versions.CurrentVersion.Original())
-	conventionalCommits := changelog.ParseConventionalCommits(commits)
+	conventionalCommits := changelog.ParseCommits(commits)
 	cl := changelog.GenerateChangelog(conventionalCommits, g.ProjectURL)
 
 	title := naming.GeneratePrTitle(versions.NextVersion.Original())
-	description := naming.CreatePrDescription(versions.NextVersion.Original(), cl)
+	description := naming.CreatePrDescription(versions.NextVersion.Original(), cl, g.PropagationTargets, g.ConfigUpdates)
 
 	newPR := &github.NewPullRequest{
 		Title: github.String(title),
@@ -92,6 +83,9 @@ func (g Client) createPullRequest(source string, target string, versions config.
 	return nil
 }
 
+func (g Client) CheckCreateFileMergeRequest(source string, target string) error {
+	return nil
+}
 func (g Client) getExistingPullRequestNumber(source, target string) (int, error) {
 	owner, repo := strings.Split(g.Repository, "/")[0], strings.Split(g.Repository, "/")[1]
 

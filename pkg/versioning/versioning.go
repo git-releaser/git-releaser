@@ -3,12 +3,11 @@ package versioning
 import (
 	"fmt"
 	"github.com/Masterminds/semver"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/thschue/git-releaser/pkg/config"
-	"github.com/thschue/git-releaser/pkg/git/common"
-	"github.com/thschue/git-releaser/pkg/manifest"
-	"github.com/thschue/git-releaser/pkg/versioning/conventional"
-	"github.com/thschue/git-releaser/pkg/versioning/simple"
+	"github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/git/common"
+	"github.com/git-releaser/git-releaser/pkg/manifest"
+	"github.com/git-releaser/git-releaser/pkg/versioning/conventional"
+	"github.com/git-releaser/git-releaser/pkg/versioning/simple"
 )
 
 type IVersion interface {
@@ -16,7 +15,6 @@ type IVersion interface {
 	SetNextVersion() error
 	GetNextVersion() (semver.Version, bool)
 	GetVersions() config.Versions
-	GetHistory() []object.Commit
 }
 
 func NewVersion(cfg config.VersioningConfig) IVersion {

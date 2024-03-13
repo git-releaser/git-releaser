@@ -1,30 +1,27 @@
 /*
 Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 */
+
 package update
 
 import (
 	"errors"
 	"fmt"
+	"github.com/git-releaser/git-releaser/pkg/config"
+	"github.com/git-releaser/git-releaser/pkg/git"
+	"github.com/git-releaser/git-releaser/pkg/helpers"
+	"github.com/git-releaser/git-releaser/pkg/versioning"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/thschue/git-releaser/pkg/config"
-	"github.com/thschue/git-releaser/pkg/git"
-	"github.com/thschue/git-releaser/pkg/helpers"
-	"github.com/thschue/git-releaser/pkg/versioning"
 	"os"
+	"strconv"
 )
 
 // UpdateCmd represents the update command
 var UpdateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Update the repository with the next version and create a release pull request",
+	Long:  `Update the repository with the next version and create a release pull request.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		additionalConfig := make(map[string]string)
 
@@ -36,24 +33,24 @@ to quickly create a Cobra application.`,
 			additionalConfig["projectId"] = fmt.Sprintf("%d", viper.GetInt("project_id"))
 		}
 
-		fmt.Println(viper.GetString("project_url"))
-
-		g := git.NewGitClient(git.GitConfig{
-			Provider:         viper.GetString("provider"),
-			AccessToken:      viper.GetString("token"),
-			UserId:           viper.GetString("user_id"),
-			ProjectUrl:       viper.GetString("project_url"),
-			ApiUrl:           viper.GetString("api_url"),
-			AdditionalConfig: additionalConfig,
-			DryRun:           viper.GetBool("dry-run"),
-		})
-
 		conf, err := config.ReadConfig(viper.ConfigFileUsed())
 		if err != nil {
 			if !errors.Is(err, os.ErrNotExist) {
 				fmt.Println(err)
 			}
 		}
+
+		g := git.NewGitClient(git.Config{
+			Provider:           viper.GetString("provider"),
+			AccessToken:        viper.GetString("token"),
+			UserId:             viper.GetString("user_id"),
+			ProjectUrl:         viper.GetString("project_url"),
+			ApiUrl:             viper.GetString("api_url"),
+			AdditionalConfig:   additionalConfig,
+			PropagationTargets: conf.PropagationTargets,
+			DryRun:             viper.GetBool("dry-run"),
+			ConfigUpdates:      conf.ConfigUpdates,
+		})
 
 		if conf.TargetBranch == "" {
 			conf.TargetBranch = "main"
@@ -79,6 +76,39 @@ to quickly create a Cobra application.`,
 			if err != nil {
 				fmt.Println(err)
 			}
+
+			if len(conf.ConfigUpdates) > 0 {
+				for _, update := range conf.ConfigUpdates {
+					if update.ProjectId != 0 {
+						additionalConfig["projectId"] = strconv.Itoa(update.ProjectId)
+					}
+
+					r := git.NewGitClient(git.Config{
+						Provider:         viper.GetString("provider"),
+						AccessToken:      viper.GetString("token"),
+						UserId:           viper.GetString("user_id"),
+						ProjectUrl:       update.Repository,
+						ApiUrl:           viper.GetString("api_url"),
+						AdditionalConfig: additionalConfig,
+						DryRun:           viper.GetBool("dry-run"),
+					})
+
+					changeset, err := r.ReplaceTaggedLines(update.Files, update.SearchTag, versions.CurrentVersion.String())
+					if err != nil {
+						fmt.Println(err)
+					}
+
+					err = r.CommitFile(fmt.Sprintf("release/replace-%s-%s", update.SearchTag, versions.CurrentVersion.String()), changeset)
+					if err != nil {
+						fmt.Println("Could not update the Repository: " + err.Error())
+					}
+
+					err = r.CheckCreateFileMergeRequest(fmt.Sprintf("release/replace-%s-%s", update.SearchTag, versions.CurrentVersion.String()), conf.TargetBranch)
+					if err != nil {
+						fmt.Println("Could not create the Merge Request: " + err.Error())
+					}
+				}
+			}
 			return
 		}
 
@@ -87,7 +117,7 @@ to quickly create a Cobra application.`,
 			return
 		}
 
-		branch, err := g.CheckCreateBranch(conf.TargetBranch, versions.NextVersion.Original())
+		branch, err := g.CheckCreateBranch(conf.TargetBranch, versions.NextVersion.Original(), conf.BranchPrefix)
 		if err != nil {
 			fmt.Println("Could not check for Branch: " + err.Error())
 		}
@@ -98,7 +128,7 @@ to quickly create a Cobra application.`,
 			fmt.Println("Could not update the Repository: " + err.Error())
 		}
 
-		err = g.CheckCreatePullRequest(branch, conf.TargetBranch, versions)
+		err = g.CheckCreateReleasePullRequest(branch, conf.TargetBranch, versions)
 		if err != nil {
 			panic(err)
 		}

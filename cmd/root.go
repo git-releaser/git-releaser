@@ -5,12 +5,13 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/git-releaser/git-releaser/cmd/changelog"
+	"github.com/git-releaser/git-releaser/cmd/initialize"
+	"github.com/git-releaser/git-releaser/cmd/update"
+	update_files "github.com/git-releaser/git-releaser/cmd/update-files"
+	"github.com/git-releaser/git-releaser/pkg/naming"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/thschue/git-releaser/cmd/changelog"
-	"github.com/thschue/git-releaser/cmd/initialize"
-	"github.com/thschue/git-releaser/cmd/update"
-	"github.com/thschue/git-releaser/pkg/naming"
 	"os"
 )
 
@@ -62,6 +63,7 @@ func init() {
 	rootCmd.AddCommand(initialize.InitializeCmd)
 	rootCmd.AddCommand(update.UpdateCmd)
 	rootCmd.AddCommand(changelog.ChangeLogCmd)
+	rootCmd.AddCommand(update_files.UpdateFilesCmd)
 
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", fmt.Sprintf("Default config file (%s.%s)", naming.DefaultConfigFileName, "yaml"))
