@@ -1,6 +1,8 @@
 module github.com/git-releaser/git-releaser
 
-go 1.21.5
+go 1.23.0
+
+toolchain go1.24.13
 
 require (
 	github.com/Masterminds/semver v1.5.0
@@ -11,7 +13,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
 	github.com/thenativeweb/get-next-version v0.0.0-20240226052425-3d500cda556c
-	golang.org/x/oauth2 v0.24.0
+	golang.org/x/oauth2 v0.27.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
